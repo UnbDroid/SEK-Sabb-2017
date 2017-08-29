@@ -1,0 +1,157 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+// #define L_ULTRAS
+#define R_ULTRAS IN_2
+#define GYRO IN_3
+
+#define POT -60
+#define POT_LOW -10
+
+#define BLACK 1
+/*#define RED
+#define GREEN
+#define BLUE*/
+#define WHITE 6
+#define OFFSET_SAMPLES 2000.0
+#define RAIO_RODA 2.5
+#define DO_IT_AGAIN 0
+#define GO_ON_BUDDY 1
+
+float GetAngle(float distance){
+    float motor_angle;
+    motor_angle = (distance*360)/(2*PI*RAIO_RODA);
+    return motor_angle;
+}
+
+float GetGyroOffset(){
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+    
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+sub TurnGyro(float degrees){
+    float angle = 0, gyro = 0;
+    unsigned long time = CurrentTick(), prev_time;
+
+    Off(MOTORS);
+
+    degrees = -degrees;
+
+    float offset = GetGyroOffset();
+    
+    if(degrees > 0) {
+        while(angle < degrees){
+            /*OnRev(R_MOTOR, POT);
+            Wait(400);
+            Off(MOTORS);
+            OnFwd(L_MOTOR, POT);
+            Wait(300);*/
+            OnRev(R_MOTOR, POT);
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO);
+            angle += (gyro - offset) * (time - prev_time)/1000.0;
+            /*ClearLine(LCD_LINE1);
+            TextOut(0, LCD_LINE1, "ANGLE:");
+            NumOut(48, LCD_LINE1, angle);*/
+        }
+
+    } else {
+        OnFwd(R_MOTOR, POT);
+        //OnRev(L_MOTOR, POT);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO);
+            angle += (gyro - offset) * (time - prev_time)/1000.0;
+            /*ClearLine(LCD_LINE1);
+            TextOut(0, LCD_LINE1, "ANGLE:");
+            NumOut(48, LCD_LINE1, angle);*/
+        }
+    }
+
+    Off(MOTORS);
+}
+
+void Adjust(float limit_angle){
+    float offset_RM = MotorRotationCount(R_MOTOR);
+
+    while((MotorRotationCount(R_MOTOR) - offset_RM) < limit_angle){
+        OnRev(R_MOTOR, POT);
+    }
+    Off(R_MOTOR);
+
+    float offset_LM = MotorRotationCount(L_MOTOR);
+
+    while((MotorRotationCount(L_MOTOR) - offset_LM) < limit_angle){
+        OnRev(L_MOTOR, POT);
+    }
+    Off(L_MOTOR);
+}
+
+task main(){
+    SetSensorHTGyro(GYRO);
+    SetSensorColorFull(L_COLOR);
+    SetSensorColorFull(R_COLOR);
+    SetSensorUltrasonic(R_ULTRAS);
+    //SetSensorUltrasonic(L_ULTRAS);
+
+    int condition = DO_IT_AGAIN;
+    float offset_RM, offset_LM, offset_P, limit_angle;
+
+    OnFwd(MOTORS, POT);
+
+    while(true){
+        if(SensorUS(R_ULTRAS) <= 25){
+            Wait(900);
+            Off(MOTORS);
+            OnFwd(GATE, POT);
+            Wait(400);
+            OnFwd(GATE, POT_LOW);
+
+            TurnGyro(-80.0);
+
+            offset_LM = MotorRotationCount(L_MOTOR);
+            offset_RM = MotorRotationCount(R_MOTOR);
+
+            while(condition == DO_IT_AGAIN){
+                limit_angle = GetAngle(7);
+
+                while((MotorRotationCount(R_MOTOR) - offset_RM) < limit_angle){
+                    OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+                }
+
+                if(R_COLOR == BLACK){
+                    Off(MOTORS);
+                    limit_angle = GetAngle(8);
+                    Adjust(limit_angle);
+                    offset_RM = MotorRotationCount(R_MOTOR);
+
+                } else {
+                    condition = GO_ON_BUDDY;
+                }
+            }
+
+            Off(MOTORS);
+            OnRev(GATE, -50);
+            Wait(800);
+            Off(GATE);
+
+            OnRev(MOTORS, POT);
+            Wait(700);
+            Off(MOTORS);
+            TurnGyro(80.0);
+        }
+
+        OnFwd(MOTORS, POT);    
+    }
+
+}

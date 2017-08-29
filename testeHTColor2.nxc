@@ -1,0 +1,38 @@
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+
+task main(){
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+	SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_NEAR);
+
+    byte red, green, blue, white, num;
+
+    while(true){
+    	ReadSensorHTColor2Active(L_COLOR, num, red, green, blue, white);
+
+    	ClearLine(LCD_LINE1);
+        TextOut(0, LCD_LINE1, "NUM:");
+        NumOut(48, LCD_LINE1, num);
+
+        ClearLine(LCD_LINE2);
+        TextOut(0, LCD_LINE2, "RED:");
+        NumOut(48, LCD_LINE2, red);
+
+        ClearLine(LCD_LINE3);
+        TextOut(0, LCD_LINE3, "GREEN:");
+        NumOut(48, LCD_LINE3, green);
+
+        ClearLine(LCD_LINE4);
+        TextOut(0, LCD_LINE4, "BLUE:");
+        NumOut(48, LCD_LINE4, blue);
+
+        ClearLine(LCD_LINE5);
+        TextOut(0, LCD_LINE5, "WHITE:");
+        NumOut(48, LCD_LINE5, white);
+
+        Wait(100);
+    }
+
+}
