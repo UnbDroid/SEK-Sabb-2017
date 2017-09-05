@@ -1,0 +1,30 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define RAIO_RODA 3
+#define POT -60
+
+float offset_LM, offset_RM;
+
+float GetAngle(float distance){
+    float motor_angle;
+    motor_angle = (distance*360)/(2*PI*RAIO_RODA);
+    return -motor_angle;
+}
+
+void SetOffsets(void){
+    offset_LM = MotorRotationCount(L_MOTOR);
+    offset_RM = MotorRotationCount(R_MOTOR);
+}
+
+task main(){
+	float limit_angle = GetAngle(10);
+
+	SetOffsets();
+
+    while((MotorRotationCount(R_MOTOR) - offset_RM) > limit_angle && (MotorRotationCount(L_MOTOR) - offset_LM) > limit_angle){
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    }
+
+    Off(MOTORS);
+}                                                                                                           
