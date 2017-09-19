@@ -1,0 +1,30 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define POT 60
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+#define GYRO IN_3
+
+task main(){
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_NEAR);
+    //SetSensorUltrasonic(R_ULTRAS);
+    //SetSensorUltrasonic(L_ULTRAS);
+
+    while(true){
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+        if(SensorUS(R_ULTRAS) <= 25){
+            Wait(900);
+            Off(MOTORS);
+            PickUpPeople();
+        };
+	};        
+}
