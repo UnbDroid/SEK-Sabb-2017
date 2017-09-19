@@ -26,5 +26,5 @@ task main(){
             Off(MOTORS);
             PickUpPeople();
         };
-	};        
+    };        
 }
