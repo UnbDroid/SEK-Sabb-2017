@@ -18,8 +18,8 @@ task main(){
     //SetSensorUltrasonic(R_ULTRAS);
     //SetSensorUltrasonic(L_ULTRAS);
 
-	byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, dir_r, dir_b, dir_y;
-	dir_r = dir_b = dir_y = -1;
+	byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, dir_r, dir_b, dir_g;
+	dir_r = dir_b = dir_g = -1;
 
     while(true){
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
