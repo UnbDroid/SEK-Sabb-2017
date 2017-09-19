@@ -14,17 +14,33 @@ task main(){
     SetSensorLowspeed(L_COLOR);
     SetSensorLowspeed(R_COLOR);
     SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
-    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_NEAR);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
     //SetSensorUltrasonic(R_ULTRAS);
     //SetSensorUltrasonic(L_ULTRAS);
 
+	byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, dir_r, dir_b, dir_y;
+	dir_r = dir_b = dir_y = -1;
+
     while(true){
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+        ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
+		ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);
+
+		//As condições de entrada nos determinados escopos serão alteradas de acordo com a calibração dos sensores
+		if(num_r == num_l && num_r == RED){
+		}
+		else if(num_r == num_l && num_r == GREEN){
+		}
+		else if(num_r == num_l && num_r == BLUE){
+		}
+		else if(num_r == num_l && num_r == BLACK){
+		};		
 
         if(SensorUS(R_ULTRAS) <= 25){
             Wait(900);
             Off(MOTORS);
             PickUpPeople();
         };
-    };        
+	};        
 }
