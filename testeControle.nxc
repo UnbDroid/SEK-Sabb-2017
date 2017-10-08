@@ -1,0 +1,75 @@
+#define OFFSET_SAMPLES 3000.0
+#define RAIO_RODA 3
+#define VELOCIDADE_MAX 12
+#define VELOCIDADE_MIN 10
+#define POT_MAX 70
+
+int pot_a = 10, pot_c = 10;
+float velocidade_a = 0, velocidade_c = 0;
+
+float CalculaDistancia(float angulo_motor){
+    float distancia;
+    distancia = (angulo_motor*2*PI*RAIO_RODA)/(360);
+    return distancia;
+}
+
+float VelocidadeRobo(byte output){ // Pega o deltaT e o deltaTeta, transforma o deltaTeta em deltaS e calcula a velocidade do robo
+	float velocidade, angulo_inicial, angulo_final, angulo, distancia;
+	unsigned long tempo_inicial, tempo_final, tempo;
+
+	tempo_inicial = CurrentTick();
+	angulo_inicial = MotorRotationCount(output);
+	Wait(100);
+	tempo_final = CurrentTick();
+	angulo_final = MotorRotationCount(output);
+
+	angulo = angulo_final - angulo_inicial;
+	tempo = tempo_final - tempo_inicial;
+	distancia = CalculaDistancia(angulo);
+	velocidade = 1000.0*(distancia/tempo);
+
+	return velocidade;
+}
+
+void AjustaVelocidade(){
+	while((velocidade_a < VELOCIDADE_MIN || velocidade_c < VELOCIDADE_MIN) || (velocidade_a > VELOCIDADE_MAX || velocidade_c > VELOCIDADE_MAX)){
+		OnFwd(OUT_A, pot_a);
+		OnFwd(OUT_C, pot_c);
+
+		velocidade_a = VelocidadeRobo(OUT_A);
+		velocidade_c = VelocidadeRobo(OUT_C);
+
+		if(velocidade_a < VELOCIDADE_MIN && pot_a <= POT_MAX){
+			pot_a += 15;
+		} else if(velocidade_a > VELOCIDADE_MAX){
+			pot_a -= 5;
+		}
+
+		if(velocidade_c < VELOCIDADE_MIN && pot_c <= POT_MAX){
+			pot_c += 15;
+		} else if(velocidade_a > VELOCIDADE_MAX){
+			pot_c -= 5;
+		}
+	}
+}
+
+task main(){
+	AjustaVelocidade();
+	velocidade_a = VelocidadeRobo(OUT_A);
+	velocidade_c = VelocidadeRobo(OUT_C);
+
+	while(1){
+		ClearLine(LCD_LINE1);
+    	TextOut(0, LCD_LINE1, "POT_A:");
+    	NumOut(48, LCD_LINE1, pot_a);
+    	ClearLine(LCD_LINE2);
+    	TextOut(0, LCD_LINE2, "SPEED_A:");
+    	NumOut(48, LCD_LINE2, velocidade_a);
+    	ClearLine(LCD_LINE3);
+    	TextOut(0, LCD_LINE3, "POT_C:");
+    	NumOut(48, LCD_LINE3, pot_c);
+    	ClearLine(LCD_LINE4);
+    	TextOut(0, LCD_LINE4, "SPEED_C:");
+    	NumOut(48, LCD_LINE4, velocidade_c);
+	}	
+}
