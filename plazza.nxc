@@ -25,56 +25,50 @@ void plazza(){
 		ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);
 
 
-		ClearLine(LCD_LINE1);
-        TextOut(0, LCD_LINE1, "NUM:");
-        NumOut(48, LCD_LINE1, num_l);
-
-        ClearLine(LCD_LINE2);
-        TextOut(0, LCD_LINE2, "RED:");
-        NumOut(48, LCD_LINE2, red_l);
-
-        ClearLine(LCD_LINE3);
-        TextOut(0, LCD_LINE3, "GREEN:");
-        NumOut(48, LCD_LINE3, green_l);
-
-        ClearLine(LCD_LINE4);
-        TextOut(0, LCD_LINE4, "BLUE:");
-        NumOut(48, LCD_LINE4, blue_l);
-
-        ClearLine(LCD_LINE5);
-        TextOut(0, LCD_LINE5, "WHITE:");
-        NumOut(48, LCD_LINE5, white_l);
-
-        Wait(100);
-		
-
-        while(true){
+	    
 		 	if(num_r == RED && num_l == RED){
 			OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-			Wait(1000);
-			while (num_r != BLACK && num_l != BLACK){
-			OnFwdReg(MOTORS,POT, OUT_REGMODE_SYNC);
-			}
-			while(num_r != WHITE && num_l != WHITE){
-			OnFwdReg(MOTORS,POT, OUT_REGMODE_SYNC);
-			}
-			OnFwdReg(GATE, -50, OUT_REGMODE_SYNC);
-			Wait(500);
-			OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
-			Wait(200);
-			while(num_r == BLACK && num_l == BLACK){
-			OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
-			}
+			Wait(2000);
 			Off(MOTORS);
+			Wait(200);
+			}
+			if(num_r == WHITE && num_l == WHITE){
+				while(num_r == WHITE && num_l == WHITE){
+				ClearLine(LCD_LINE1);	
+				TextOut(0, LCD_LINE1, "ENTREI NO PLAZZA");	
+				OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+				}
+			}		
+			if (num_r == BLACK && num_l == BLACK){
+				while(num_r == BLACK && num_l == BLACK){
+				ClearLine(LCD_LINE1);	
+				TextOut(0, LCD_LINE1, "ACHEI O PRETO");
+				}
+			}	
+			Off(MOTORS);
+			ClearLine(LCD_LINE1);
+			TextOut(0, LCD_LINE1, "final do PRETO");
+			Wait(1000);
+			OnFwdReg(GATE, -50, OUT_REGMODE_SYNC);
+			Wait(2000);
+			OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+			if(num_r = BLACK && num_l == BLACK){
+				while(num_r == BLACK && num_l == BLACK){
+				ClearLine(LCD_LINE1);	
+				TextOut(0, LCD_LINE1, "To saindo do plazza");
+		        }
+			Off(MOTORS);
+			Wait(10000);
+			}	
+}
 
-		}
 			
 
 
 	
         
 	
-}
+
 
 
 task main(){
@@ -97,6 +91,7 @@ task main(){
 			plazza();
 
 		}
+		TextOut(0, LCD_LINE5, "NAO TO NA FUNCAO");
 
 
 		
