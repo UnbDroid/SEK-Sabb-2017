@@ -161,34 +161,48 @@ sub detect_colors(){
 	ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);	
 	
 	/*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
-	if(num_r == 4)
-		color_r = GREEN;
-	else if(num_r == 14)
-		if(white_r > 217 && red_r > 200 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+	if(num_r == 14)
+		if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
 			color_r = WHITE;
 		else
 			color_r = OUT;
+	else if(num_r == 12)
+		if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+			color_r = WHITE;
+		else
+			color_r = BLACK;
+	else if(num_r == 17)
+		color_r = BLACK;
+	else if(num_r == 13)
+		color_r = WHITE;	
+	else if(num_r == 4)
+		color_r = GREEN;
 	else if(num_r == 3 || num_r == 2)
 		color_r = BLUE;
-	else if(num_r == 8)
+	else if(num_r >= 7 && num_r <= 10)
 		color_r = RED;
-	else
-		color_r = BLACK;
 			
 		
-	if(num_l == 4)
-		color_l = GREEN;
-	else if(num_l == 14)
-		if(white_l > 217 && red_l > 200 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+	if(num_l == 14)
+		if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
 			color_l = WHITE;
 		else
 			color_l = OUT;	
+	else if(num_l == 12)
+		if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+			color_l = WHITE;
+		else
+			color_l = BLACK;
+	else if(num_l == 17)
+		color_l = BLACK;
+	else if(num_l == 13)
+		color_l = WHITE;							
+	else if(num_l == 4)
+		color_l = GREEN;
 	else if(num_l == 3 || num_l == 2)
 		color_l = BLUE;
-	else if(num_l == 8)
+	else if(num_l >= 7 && num_l <= 10)
 		color_l = RED;	
-	else
-		color_l = BLACK;					
 }
 
 // Ajusta o robô para sair da intersecção para poder virar ou seguir reto
@@ -209,30 +223,41 @@ sub adjust(){
 	nova_l = color_l;
 	
 	// Se for preto não precisa de ajuste
-	if(nova_r != BLACK){
-		
-		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-		while(nova_r == color_r || nova_l == color_l){
-			detect_colors();
-			ClearLine(LCD_LINE2);
-			TextOut(0, LCD_LINE2, "LendoR: ");
-			ClearLine(LCD_LINE3);
-			NumOut(50, LCD_LINE3, color_r);
-			ClearLine(LCD_LINE4);
-			TextOut(0, LCD_LINE4, "LendoL: ");
-			ClearLine(LCD_LINE5);
-			NumOut(50, LCD_LINE5, color_l);
-		}
-		Off(MOTORS);
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+	while(nova_r == color_r || nova_l == color_l){
+		detect_colors();
+		ClearLine(LCD_LINE2);
+		TextOut(0, LCD_LINE2, "LendoR: ");
+		ClearLine(LCD_LINE3);
+		NumOut(50, LCD_LINE3, color_r);
+		ClearLine(LCD_LINE4);
+		TextOut(0, LCD_LINE4, "LendoL: ");
+		ClearLine(LCD_LINE5);
+		NumOut(50, LCD_LINE5, color_l);
+	}
+	Off(MOTORS);
 	
+	if(nova_r != BLACK && nova_l != BLACK){	
 		Wait(400);
 		AndaReto(2);
 		Off(MOTORS);
-
-		ClearLine(LCD_LINE1);
-		TextOut(0, LCD_LINE1, "Parou de ler a nova");			
-		Wait(800);
 	};
+
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "Entrou no if");
+	ClearLine(LCD_LINE2);
+	TextOut(0, LCD_LINE2, "LendoR: ");
+	ClearLine(LCD_LINE3);
+	NumOut(50, LCD_LINE3, nova_r);
+	ClearLine(LCD_LINE4);
+	TextOut(0, LCD_LINE4, "LendoL: ");
+	ClearLine(LCD_LINE5);
+	NumOut(50, LCD_LINE5, nova_l);				
+	Wait(200);
+
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "Parou de ler a nova");			
+	Wait(800);
 }
 
 // Vira 90 graus pra direita
@@ -260,7 +285,7 @@ sub TurnLeft(){
 // Meia Volta
 sub TurnBack(){
 	TurnGyroDireita(90);
-	TurnGyroEsquerda(90);
+	TurnGyroEsquerda(70);
 }
 
 // Escolhe para onde virar
@@ -278,6 +303,7 @@ sub choose_path(){
 			dir[last_color][last_dir] = 0;
 		TurnBack();
 		last_color = BLACK;
+		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
 	}
 	else if(nova_r == nova_l && nova_r<3 && nova_r >= 0){
 		
@@ -347,18 +373,24 @@ sub ShakeIt(){
 
 // Detecta se esta caindo e corrige a trajetória
 sub detect_fall(){
-	if(color_r == OUT && color_l == WHITE){
+	if(color_r == OUT){
 		Off(MOTORS);
 		AndaReto(-4);
 		TurnGyroEsquerda(-5);
+		ClearLine(LCD_LINE1);
+		TextOut(0, LCD_LINE1, "RIGHT");
+    	Wait(2000);		
 		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
     };
-    if(color_r == WHITE && color_l == OUT){
+    if(color_l == OUT){
     	Off(MOTORS);
 		AndaReto(-4);
 		TurnGyroDireita(5);
-		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);        	
-    };	
+		ClearLine(LCD_LINE1);
+		TextOut(0, LCD_LINE1, "LEFT");    
+    	Wait(2000);		
+		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    };
 }
 
 task main(){
@@ -369,8 +401,9 @@ task main(){
 		detect_colors();
 		
         detect_fall();
-        if(color_r != WHITE || color_l != WHITE){
+        if(color_r != WHITE && color_l != WHITE){
         	Off(MOTORS);
+        	detect_colors();
         	choose_path();
         };
 	};
