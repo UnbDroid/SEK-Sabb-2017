@@ -387,7 +387,7 @@ sub detect_fall(){
 		AndaReto(-4);
 		TurnGyroDireita(5);
 		ClearLine(LCD_LINE1);
-		TextOut(0, LCD_LINE1, "LEFT");    
+		TextOut(0, LCD_LINE1, "LEFT");
     	Wait(2000);		
 		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
     };
