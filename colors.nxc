@@ -29,7 +29,6 @@
 byte color_r, color_l, nova_r, nova_l, last_color, last_dir;
 char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
 float offset_LM, offset_RM, offset_G;
-int cont;
 
 // Inicializa tudo
 sub Init(){
@@ -43,7 +42,6 @@ sub Init(){
 	// Variáveis globais
 	last_color = BLACK;
 	last_dir = FRENTE;
-	cont = 0;  
 }
 
 /* Calculo do offset da leitura do giroscopio */
@@ -105,7 +103,7 @@ sub TurnGyroDireita(float degrees){
             time = CurrentTick();
             gyro = SensorHTGyro(GYRO, offset);
             angle += gyro * (time - prev_time)/1000.0;
-        }
+        };
     } 
     // Sentido horario
     else {
@@ -115,8 +113,8 @@ sub TurnGyroDireita(float degrees){
             time = CurrentTick();
             gyro = SensorHTGyro(GYRO, offset);
             angle += gyro * (time - prev_time)/1000.0;
-        }       
-    }
+        };      
+    };
     Off(MOTORS);
 }
 
@@ -375,21 +373,37 @@ sub ShakeIt(){
 sub detect_fall(){
 	if(color_r == OUT){
 		Off(MOTORS);
-		AndaReto(-4);
-		TurnGyroEsquerda(-5);
-		ClearLine(LCD_LINE1);
-		TextOut(0, LCD_LINE1, "RIGHT");
-    	Wait(2000);		
+		Wait(100);
+		detect_colors();
+		// Espera o robô parar para ver se ele está realmente fora da pista
+		if(color_r == OUT){
+			AndaReto(-4);
+			TurnGyroEsquerda(-5);
+			ClearLine(LCD_LINE1);
+			TextOut(0, LCD_LINE1, "RIGHT");
+			Wait(400);
+    	};
 		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+		// Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
+		while(color_r == last_color || color_l == last_color)
+			detect_colors();    
     };
     if(color_l == OUT){
     	Off(MOTORS);
-		AndaReto(-4);
-		TurnGyroDireita(5);
-		ClearLine(LCD_LINE1);
-		TextOut(0, LCD_LINE1, "LEFT");
-    	Wait(2000);		
+    	Wait(100);
+    	detect_colors();
+    	// Mesmo comentário de algumas linhas acima
+    	if(color_l == OUT){
+			AndaReto(-4);
+			TurnGyroDireita(5);
+			ClearLine(LCD_LINE1);
+			TextOut(0, LCD_LINE1, "LEFT");
+			Wait(400);
+    	};
 		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+	    // Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
+    	while(color_r == last_color || color_l == last_color)
+    		detect_colors();	
     };
 }
 
