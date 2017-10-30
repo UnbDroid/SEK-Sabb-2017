@@ -1,0 +1,208 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS  OUT_AC
+#define GATE 	OUT_B
+
+#define POT -50
+
+#define OFFSET_SAMPLES 3000
+
+#define L_COLOR 	IN_1
+#define R_COLOR 	IN_4
+#define GYRO    	IN_3
+#define R_ULTRAS	IN_2
+
+#define BLACK 	 3
+#define WHITE 	 4
+#define RED   	 0
+#define BLUE  	 1
+#define GREEN 	 2
+#define OUT		 5
+
+#define DIREITA  0
+#define FRENTE 	 1
+#define ESQUERDA 2
+
+#define DIAMETER 8.3 // Aproximado
+#define RAIO_RODA 4  // Na teoria a prática é outra
+
+#define ANGLE 100
+
+float offset_LM, offset_RM, offset_G;
+
+// Inicializa tudo
+sub Init(){
+	// Set das portas
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetSensorUltrasonic(R_ULTRAS);
+    
+}
+
+/* Calculo do offset da leitura do giroscopio */
+float GetGyroOffset(){
+    float gyro_sum = 0;
+	
+    for(int i = 0; i < OFFSET_SAMPLES; i++)
+        gyro_sum += SensorHTGyro(GYRO, 0);
+    
+    /* Aproxima para o inteiro mais próximo */
+    return (gyro_sum/OFFSET_SAMPLES);
+}
+
+// So seta os offsets :)
+void SetOffsets(){  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+// Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passa como argumento
+float CalculaAngulo(float distancia){ 
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+
+// Anda pra frente ou pra tras ate atingir a distancia passada como argumento
+void AndaReto(float distancia){
+    float angulo_limite = abs(CalculaAngulo(distancia));
+
+    SetOffsets();
+    
+    if(distancia > 0)
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    else
+        OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        
+    while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && 
+    	  abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);    
+    Off(MOTORS);
+}
+
+// Faz apenas a roda direita rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+sub TurnGyroDireita(float degrees){
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+    Off(MOTORS);
+    
+    float offset = GetGyroOffset();
+    
+    time = CurrentTick();
+    
+    // Sentido anti-horario
+    if(degrees < 0){
+        OnFwd(R_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    } 
+    // Sentido horario
+    else {
+        OnRev(R_MOTOR, -75);
+        while(angle < degrees){ 
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }       
+    }
+    Off(MOTORS);
+}
+
+// Faz apenas a roda esquerda rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+sub TurnGyroEsquerda(float degrees){
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+    Off(MOTORS);
+
+    float offset = GetGyroOffset();
+
+    time = CurrentTick()
+
+	// Sentido anti-horario
+    if(degrees < 0){
+        OnRev(L_MOTOR, POT-25);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    } 
+    // Sentido horario
+    else {
+        OnFwd(L_MOTOR, POT-25);
+        while(angle < degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    }
+    Off(MOTORS);
+}
+
+// Abre o portão
+sub OpenGate(){
+	SetOffsets();
+	Off(GATE);
+	OnFwd(GATE, POT);
+	while(abs(MotorRotationCount(GATE) - offset_G) < ANGLE);
+	Off(GATE);
+	OnFwd(GATE, POT*0.2);
+}
+
+// Fecha o portão
+sub CloseGate(){
+	SetOffsets();
+	Off(GATE);
+	OnRev(GATE, POT);
+	while(abs(MotorRotationCount(GATE) - offset_G) < ANGLE);
+	Off(GATE);
+	OnRev(GATE, POT*0.2);	
+}
+
+// Vira 90 graus pra direita
+sub TurnRight(){
+	TurnGyroDireita(15);
+	TurnGyroEsquerda(15);
+	TurnGyroDireita(15);
+	TurnGyroEsquerda(13);	
+						
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "Virou pra direita");
+}
+
+// Funcao principal
+void PickUp(){
+    int flag = 1;
+    
+	OpenGate();
+	AndaReto(15);
+	TurnRight();
+	
+    //while(flag);
+        //flag = AndaVerificando();
+        
+	//SegueViagem();
+}
+
+task main(){
+	Init();
+	
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+	while(true){
+        if(SensorUS(R_ULTRAS) <= 25){
+			Off(MOTORS);
+			PickUp();
+			break;
+		};
+	};
+}
