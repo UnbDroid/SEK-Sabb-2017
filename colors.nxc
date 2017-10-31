@@ -378,15 +378,18 @@ sub detect_fall(){
 		// Espera o robô parar para ver se ele está realmente fora da pista
 		if(color_r == OUT){
 			AndaReto(-4);
-			TurnGyroEsquerda(-5);
+			TurnGyroEsquerda(-3);
 			ClearLine(LCD_LINE1);
 			TextOut(0, LCD_LINE1, "RIGHT");
 			Wait(400);
-    	};
-		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-		// Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
-		while(color_r == last_color || color_l == last_color)
-			detect_colors();    
+			detect_colors();
+			OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+			// Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
+			while(color_r == last_color || color_l == last_color)
+				detect_colors();
+    	}
+    	else
+			OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
     };
     if(color_l == OUT){
     	Off(MOTORS);
@@ -395,15 +398,18 @@ sub detect_fall(){
     	// Mesmo comentário de algumas linhas acima
     	if(color_l == OUT){
 			AndaReto(-4);
-			TurnGyroDireita(5);
+			TurnGyroDireita(3);
 			ClearLine(LCD_LINE1);
 			TextOut(0, LCD_LINE1, "LEFT");
 			Wait(400);
-    	};
-		OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-	    // Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
-    	while(color_r == last_color || color_l == last_color)
-    		detect_colors();	
+			detect_colors();
+			OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+			// Evitar ler o mesmo quadradro duas vezes caso o robô saia meio torto e precise ajustar logo de cara
+			while(color_r == last_color || color_l == last_color)
+				detect_colors();
+    	}
+    	else
+			OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);	
     };
 }
 
