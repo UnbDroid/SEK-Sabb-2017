@@ -1,0 +1,101 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS  OUT_AC
+#define GATE 	OUT_B
+#define ALL		OUT_ABC
+
+#define POT -70
+#define POTR -70
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+#define GYRO IN_3
+
+#define BLACK 	 3
+#define WHITE 	 4
+#define RED   	 0
+#define BLUE  	 1
+#define GREEN 	 2
+#define OUT		 5
+
+byte color_r, color_l;
+
+// Inicializa tudo
+sub Init(){
+	// Set das portas
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+}
+
+// Função que tabela a saída dos sensores de luz para as cores lidas
+sub detect_colors(){
+	byte num_r, red_r, green_r, blue_r, white_r, num_l, red_l, green_l, blue_l, white_l;
+
+    ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
+	ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);	
+	
+	/*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
+	if(num_r == 4)
+		color_r = GREEN;
+	else if(num_r == 14)
+		if(white_r > 217 && red_r > 200 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+			color_r = WHITE;
+		else
+			color_r = OUT;
+	else if(num_r == 3 || num_r == 2)
+		color_r = BLUE;
+	else if(num_r == 8)
+		color_r = RED;
+	else
+		color_r = BLACK;
+			
+		
+	if(num_l == 4)
+		color_l = GREEN;
+	else if(num_l == 14)
+		if(white_l > 217 && red_l > 200 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+			color_l = WHITE;
+		else
+			color_l = OUT;	
+	else if(num_l == 3 || num_l == 2)
+		color_l = BLUE;
+	else if(num_l == 8)
+		color_l = RED;	
+	else
+		color_l = BLACK;					
+}
+
+void plazza(){
+
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    
+    detect_colors();
+    while(color_r == WHITE || color_l == WHITE)
+    	detect_colors();
+    while(color_r != WHITE || color_l != WHITE)
+    	detect_colors();  	
+    
+    Off(MOTORS);
+    Wait(1000);
+    
+    OnFwd(GATE, -20);
+    Wait(200);
+    
+    OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+    while(color_r == WHITE || color_l == WHITE)
+    	detect_colors();    
+    while(color_r != WHITE || color_l != WHITE)
+    	detect_colors();
+    Off(ALL);
+}
+
+task main(){	
+	plazza();	
+}
+
+
+
