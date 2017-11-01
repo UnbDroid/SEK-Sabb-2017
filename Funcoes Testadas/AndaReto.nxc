@@ -1,0 +1,44 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+#define RAIO_RODA 4
+
+int pot = -40;
+float offset_LM, offset_RM, offset_G;
+
+// So seta os offsets :)
+void SetOffsets(void){  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+float CalculaAngulo(float distancia){ // Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passada como argumento
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+
+void AndaReto(float distancia){ // Anda pra frente ou pra tras ate atingir a distancia passada como argumento
+    float angulo_limite = abs(CalculaAngulo(distancia));
+
+    SetOffsets();
+    if(distancia > 0){ // anda pra frente
+        OnFwdReg(MOTORS, pot, OUT_REGMODE_SYNC);
+        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+
+    } else { // anda pra trás
+        OnRevReg(MOTORS, pot, OUT_REGMODE_SYNC);
+        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+    }
+
+    Off(MOTORS);
+}
+
+task main(){
+	AndaReto(10);
+	AndaReto(-10);
+	AndaReto(15);
+	AndaReto(-15);
+}
