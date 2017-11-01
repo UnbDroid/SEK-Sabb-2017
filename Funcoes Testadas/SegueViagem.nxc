@@ -1,0 +1,139 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define GYRO IN_3
+
+#define RAIO_RODA 4
+#define OFFSET_SAMPLES 3000.0
+
+int pot = -40;
+float offset_LM, offset_RM, offset_G;
+
+void SetOffsets(void){ // So seta os offsets :)  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+float GetGyroOffset(){ // Calcula o offset do giroscopio
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+float CalculaAngulo(float distancia){ // Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passada como argumento
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+
+void AndaReto(float distancia){ // Anda pra frente ou pra tras ate atingir a distancia passada como argumento
+    float angulo_limite = abs(CalculaAngulo(distancia));
+
+    SetOffsets();
+    if(distancia > 0){ // anda pra frente
+        OnFwdReg(MOTORS, pot, OUT_REGMODE_SYNC);
+        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+
+    } else { // anda pra trás
+        OnRevReg(MOTORS, pot, OUT_REGMODE_SYNC);
+        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+    }
+
+    Off(MOTORS);
+}
+
+void MovePortao(float angulo_limite){ // Levanta ou abaixa o portao dependendo do argumento passado
+    SetOffsets();
+    if(angulo_limite > 0){ // levanta o portao
+        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+            OnFwd(GATE, pot);
+        }
+        OnFwd(GATE, pot+10);
+
+    } else { // abaixa o portao
+        angulo_limite = -angulo_limite; // trabalhar com coisas positivas é melhor
+        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+            OnRev(GATE, pot);
+        }
+        OnRev(GATE, pot+10);
+    }
+}
+
+sub TurnGyroDireita(float degrees){ // Faz apenas a roda direita rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick();
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnFwd(R_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnRev(R_MOTOR, -75);
+        while(angle < degrees){ 
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }       
+    }
+    Off(MOTORS);
+}
+
+sub TurnGyroEsquerda(float degrees){ // Faz apenas a roda esquerda rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick()
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnRev(L_MOTOR, pot-25);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnFwd(L_MOTOR, pot-25);
+        while(angle < degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    }
+    Off(MOTORS);
+}
+
+void SegueViagem(){ // Fecha o portao, da ré e sai da parada para a rua girando uma roda de cada vez (todos os parâmetros claramente são experimentais)
+    MovePortao(-120);
+    AndaReto(-13);
+    TurnGyroEsquerda(-15);
+    TurnGyroDireita(-15);
+    TurnGyroEsquerda(-15);
+    TurnGyroDireita(-19);
+}
+
+task main(){
+    SetSensorHTGyro(GYRO);
+
+    SegueViagem();
+}
