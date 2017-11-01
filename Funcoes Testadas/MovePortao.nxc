@@ -1,0 +1,39 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+#define RAIO_RODA 4
+
+int pot = -40;
+float offset_LM, offset_RM, offset_G;
+
+// So seta os offsets :)
+void SetOffsets(void){  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+void MovePortao(float angulo_limite){ // Levanta ou abaixa o portao dependendo do argumento passado
+    SetOffsets();
+    if(angulo_limite > 0){ // levanta o portao
+        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+            OnFwd(GATE, pot);
+        }
+        OnFwd(GATE, pot+10);
+
+    } else { // abaixa o portao
+        angulo_limite = -angulo_limite; // trabalhar com coisas positivas é melhor
+        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+            OnRev(GATE, pot);
+        }
+        OnRev(GATE, pot+10);
+    }
+}
+
+task main(){
+	MovePortao(120);
+	MovePortao(-120);
+	MovePortao(120);
+	MovePortao(-120);
+}

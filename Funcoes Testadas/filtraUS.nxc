@@ -1,0 +1,21 @@
+#define ULTRAS IN_2
+#define INSENSIBILIDADE 0.9
+
+float valor;
+
+float FiltraUS(byte sensor){ // Filtra os valores lidos pelo sensor ultrasonico (algoritmo do Bruno)
+    int i;
+    float aux;
+    aux = SensorUS(sensor);
+    valor = valor * INSENSIBILIDADE + aux * (1-INSENSIBILIDADE);
+    return valor;
+}
+
+task main(){
+    SetSensorUltrasonic(ULTRAS);
+    while(1){
+        ClearLine(LCD_LINE1);
+        TextOut(0, LCD_LINE3, "DIST:");
+        NumOut(48, LCD_LINE3, FiltraUS(ULTRAS));
+    }
+}

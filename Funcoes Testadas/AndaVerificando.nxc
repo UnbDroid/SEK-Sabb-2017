@@ -1,0 +1,224 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+#define GYRO IN_3
+
+#define OUT      5
+#define WHITE    4
+#define BLACK    3
+#define GREEN    2
+#define BLUE     1
+#define RED      0
+#define RAIO_RODA 4
+#define OFFSET_SAMPLES 3000.0
+
+int pot = -40;
+float offset_LM, offset_RM, offset_G;
+byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l;
+
+void SetOffsets(void){ // So seta os offsets :)  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+float CalculaDistancia(float angulo_motor){ // Calcula a distancia em cm equivalente a angulacao do motor passada como argumento
+    float distancia;
+    distancia = (angulo_motor*2*PI*RAIO_RODA)/(360);
+    return abs(distancia);
+}
+
+float GetGyroOffset(){ // Calcula o offset do giroscopio
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+sub TurnGyroDireita(float degrees){ // Faz apenas a roda direita rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick();
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnFwd(R_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnRev(R_MOTOR, -75);
+        while(angle < degrees){ 
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }       
+    }
+    Off(MOTORS);
+}
+
+sub TurnGyroEsquerda(float degrees){ // Faz apenas a roda esquerda rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick()
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnRev(L_MOTOR, pot-25);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnFwd(L_MOTOR, pot-25);
+        while(angle < degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    }
+    Off(MOTORS);
+}
+
+// Função que tabela a saída dos sensores de luz para as cores lidas
+sub detect_colors(){
+    ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
+    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);  
+    
+    /*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
+    if(num_r == 14)
+        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+            color_r = WHITE;
+        else
+            color_r = OUT;
+    else if(num_r == 12)
+        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+            color_r = WHITE;
+        else
+            color_r = BLACK;
+    else if(num_r == 17)
+        color_r = BLACK;
+    else if(num_r == 13)
+        color_r = WHITE;    
+    else if(num_r == 4)
+        color_r = GREEN;
+    else if(num_r == 3 || num_r == 2)
+        color_r = BLUE;
+    else if(num_r >= 7 && num_r <= 10)
+        color_r = RED;
+            
+        
+    if(num_l == 14)
+        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+            color_l = WHITE;
+        else
+            color_l = OUT;  
+    else if(num_l == 12)
+        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+            color_l = WHITE;
+        else
+            color_l = BLACK;
+    else if(num_l == 17)
+        color_l = BLACK;
+    else if(num_l == 13)
+        color_l = WHITE;                            
+    else if(num_l == 4)
+        color_l = GREEN;
+    else if(num_l == 3 || num_l == 2)
+        color_l = BLUE;
+    else if(num_l >= 7 && num_l <= 10)
+        color_l = RED;  
+}
+
+void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alternadamente pra ajudar a girar as rodinhas de apoio 
+    Wait(200);
+    OnFwd(R_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(L_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(R_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(L_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+}
+
+int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
+    float angulo_limite, dist_andada;
+
+    Rebolada(); // Ajudar a endireitar as rodinhas de apoio
+    detect_colors();
+    SetOffsets();
+
+    OnFwdReg(MOTORS, pot, OUT_REGMODE_SYNC);
+    while(color_l != OUT && color_r != OUT)
+        detect_colors();
+    Off(MOTORS);
+    dist_andada = CalculaDistancia(abs(MotorRotationCount(R_MOTOR) - offset_RM));
+    
+    if(dist_andada > 10){ // O robo chegou ao fim da parada
+        detect_colors(); // Para checar se chegou torto
+        if(color_l == OUT && color_r == WHITE){ 
+            TurnGyroDireita(3);
+            detect_colors();
+            OnFwdReg(MOTORS, pot, OUT_REGMODE_SYNC);
+            while(color_l != OUT && color_r != OUT)
+                detect_colors();
+            Off(MOTORS);
+        }
+
+        if(color_r == OUT && color_l == WHITE){ 
+            TurnGyroEsquerda(-3);
+            detect_colors();
+            OnFwdReg(MOTORS, pot, OUT_REGMODE_SYNC);
+            while(color_l != OUT && color_r != OUT)
+                detect_colors();
+            Off(MOTORS);
+        }
+
+        return 0;
+
+    } else { // O robo precisa se ajustar pra entrar na parada
+        if(color_r == OUT){ // Lado direito pra fora
+            TurnGyroDireita(15);
+            TurnGyroEsquerda(-17);
+
+        } else { // Lado esquerdo pra fora
+            TurnGyroEsquerda(-15);
+            TurnGyroDireita(17);
+        }
+        return 1;
+    }
+}
+
+task main(){
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+
+    while(AndaVerificando());
+}

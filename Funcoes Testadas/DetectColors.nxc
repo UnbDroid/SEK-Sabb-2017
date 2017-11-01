@@ -1,0 +1,78 @@
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+
+#define OUT      5
+#define WHITE    4
+#define BLACK    3
+#define GREEN    2
+#define BLUE     1
+#define RED      0
+
+byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l;
+
+// Função que tabela a saída dos sensores de luz para as cores lidas
+sub detect_colors(){
+    ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
+    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);  
+    
+    /*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
+    if(num_r == 14)
+        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+            color_r = WHITE;
+        else
+            color_r = OUT;
+    else if(num_r == 12)
+        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+            color_r = WHITE;
+        else
+            color_r = BLACK;
+    else if(num_r == 17)
+        color_r = BLACK;
+    else if(num_r == 13)
+        color_r = WHITE;    
+    else if(num_r == 4)
+        color_r = GREEN;
+    else if(num_r == 3 || num_r == 2)
+        color_r = BLUE;
+    else if(num_r >= 7 && num_r <= 10)
+        color_r = RED;
+            
+        
+    if(num_l == 14)
+        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+            color_l = WHITE;
+        else
+            color_l = OUT;  
+    else if(num_l == 12)
+        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+            color_l = WHITE;
+        else
+            color_l = BLACK;
+    else if(num_l == 17)
+        color_l = BLACK;
+    else if(num_l == 13)
+        color_l = WHITE;                            
+    else if(num_l == 4)
+        color_l = GREEN;
+    else if(num_l == 3 || num_l == 2)
+        color_l = BLUE;
+    else if(num_l >= 7 && num_l <= 10)
+        color_l = RED;  
+}
+
+task main(){
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+
+	while(1){
+        detect_colors();
+        ClearLine(LCD_LINE1);
+        TextOut(0, LCD_LINE1, "COLOR_R:");
+        NumOut(50, LCD_LINE1, color_r);
+        ClearLine(LCD_LINE3);
+        TextOut(0, LCD_LINE3, "COLOR_L:");
+        NumOut(50, LCD_LINE3, color_l);
+    }
+}

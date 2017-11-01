@@ -1,0 +1,20 @@
+#define GYRO IN_3
+#define OFFSET_SAMPLES 3000.0
+
+float GetGyroOffset(){ // Calcula o offset do giroscopio
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+task main(){
+	SetSensorHTGyro(GYRO);
+	
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "OFFSET: ");
+	NumOut(50, LCD_LINE1, GetGyroOffset());
+	Wait(3000);
+}

@@ -1,0 +1,85 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define GYRO IN_3
+
+#define RAIO_RODA 4
+#define OFFSET_SAMPLES 3000.0
+
+float GetGyroOffset(){ // Calcula o offset do giroscopio
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+sub TurnGyroDireita(float degrees){ // Faz apenas a roda direita rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick();
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnFwd(R_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnRev(R_MOTOR, -75);
+        while(angle < degrees){ 
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }       
+    }
+    Off(MOTORS);
+}
+
+sub TurnGyroEsquerda(float degrees){ // Faz apenas a roda esquerda rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick()
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnRev(L_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnFwd(L_MOTOR, -75);
+        while(angle < degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    }
+    Off(MOTORS);
+}
+
+task main(){
+    SetSensorHTGyro(GYRO);
+
+	TurnGyroEsquerda(90);
+    TurnGyroEsquerda(-90);
+    TurnGyroDireita(90);
+    TurnGyroDireita(-90);
+}

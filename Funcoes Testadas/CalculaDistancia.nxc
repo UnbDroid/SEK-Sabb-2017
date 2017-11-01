@@ -1,0 +1,14 @@
+#define RAIO_RODA 4
+
+float CalculaDistancia(float angulo_motor){ // Calcula a distancia em cm equivalente a angulacao do motor passada como argumento
+    float distancia;
+    distancia = (angulo_motor*2*PI*RAIO_RODA)/(360);
+    return abs(distancia); //retorna um valor sempre positivo
+}
+
+task main(){
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "DIST: ");
+	NumOut(50, LCD_LINE3, CalculaDistancia(360));
+	Wait(3000);
+}

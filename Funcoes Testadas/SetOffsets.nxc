@@ -1,0 +1,30 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+float offset_LM, offset_RM, offset_G;
+
+void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+task main(){
+	OnFwdReg(MOTORS, -50, OUT_REGMODE_SYNC);
+	OnFwd(GATE, -50);
+	Wait(1000);
+	Off(MOTORS);
+	Off(GATE);
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "OFFSET_L: ");
+	NumOut(50, LCD_LINE1, offset_LM);
+	ClearLine(LCD_LINE2);
+	TextOut(0, LCD_LINE2, "OFFSET_r: ");
+	NumOut(50, LCD_LINE2, offset_RM);
+	ClearLine(LCD_LINE3);
+	TextOut(0, LCD_LINE3, "OFFSET_G: ");
+	NumOut(50, LCD_LINE3, offset_G);
+	Wait(3000);
+}

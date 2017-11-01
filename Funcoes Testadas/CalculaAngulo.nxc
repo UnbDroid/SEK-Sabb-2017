@@ -1,0 +1,14 @@
+#define RAIO_RODA 4
+
+float CalculaAngulo(float distancia){ // Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passada como argumento
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+
+task main(){
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "ANGLE: ");
+	NumOut(50, LCD_LINE3, CalculaAngulo(10));
+	Wait(3000);
+}

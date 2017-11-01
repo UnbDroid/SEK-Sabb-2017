@@ -1,0 +1,25 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+
+int pot = -40;
+
+void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alternadamente pra ajudar a girar as rodinhas de apoio 
+    Wait(200);
+    OnFwd(R_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(L_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(R_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+    OnFwd(L_MOTOR, pot);
+    Wait(100);
+    Off(MOTORS);
+}
+
+task main(){
+    Rebolada();
+}
