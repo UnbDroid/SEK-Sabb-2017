@@ -30,10 +30,7 @@ task main(){
 
 	SetSensorUltrasonic(R_ULTRAS);
 
-	int ack;
-	int i;
-	int quantasPessoas = 0;
-	int ultimoNumero = 1;
+	int ack, i, quantasPessoas = 0, ultimoNumero = 1;
 
 	BTCheck(BT_CONN);
 	TextOut(10,LCD_LINE1,"Master sending");
@@ -63,5 +60,4 @@ task main(){
 		}
 		FiltraUS(R_ULTRAS);
 	}
-
 }
