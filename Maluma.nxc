@@ -1,5 +1,5 @@
 //MASTER
-#define INSENSIBILIDADE 0.9
+#define INSENSIBILIDADE 0.7
 #define BT_CONN 1
 #define OUTBOX 5
 #define INBOX 1
@@ -30,7 +30,10 @@ task main(){
 
 	SetSensorUltrasonic(R_ULTRAS);
 
-	int ack, i, quantasPessoas = 0, ultimoNumero = 1;
+	int ack;
+	int i;
+	int quantasPessoas = 0;
+	int ultimoNumero = 1;
 
 	BTCheck(BT_CONN);
 	TextOut(10,LCD_LINE1,"Master sending");
@@ -38,13 +41,13 @@ task main(){
 	while(true){
 		FiltraUS(R_ULTRAS);
 		NumOut(5,LCD_LINE4,valor);
-		if(valor <= 23 && quantasPessoas < 4){
+		if(valor <= 18 && quantasPessoas < 4){
 			CLEARLINE(LCD_LINE3);
 			NumOut(5,LCD_LINE3,1);
 			ack = 0;
 			SendRemoteNumber(BT_CONN,OUTBOX,1);
-			until(ack==0xFF) {
-				until(ReceiveRemoteNumber(INBOX,true,ack) == NO_ERR);
+			while(ack != 0xFF) {
+				while(ReceiveRemoteNumber(INBOX,true,ack) != NO_ERR);
 			}
 			quantasPessoas++;
 			ultimoNumero = 1;
@@ -54,10 +57,11 @@ task main(){
 			ack = 0;
 			SendRemoteNumber(BT_CONN,OUTBOX,0);
 			ultimoNumero = 0;
-			/*until(ack==0xFF) {
-				until(ReceiveRemoteNumber(INBOX,true,ack) == NO_ERR);
-			}*/
+			while(ack != 0xFF) {
+				while(ReceiveRemoteNumber(INBOX,true,ack) != NO_ERR);
+			}
 		}
 		FiltraUS(R_ULTRAS);
 	}
+
 }
