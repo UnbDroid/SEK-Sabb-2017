@@ -360,7 +360,6 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
         ClearLine(LCD_LINE3);
         TextOut(0, LCD_LINE3, "LendoR: ");
         NumOut(50, LCD_LINE3, color_r);
-        Wait(5000);
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
     }
 
@@ -403,6 +402,8 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
 }
 
 void SegueViagem(){ // Fecha o portao, dá ré e sai da parada para a rua girando uma roda de cada vez (todos os parâmetros claramente são experimentais)
+    SendResponseNumber(OUT_MBOX,0xFF);
+    Wait(200);
     MovePortao(-120);
     AndaReto(-13);
     TurnGyroEsquerda(-15);
@@ -536,7 +537,6 @@ task main(){
         if (ReceiveRemoteNumber(IN_MBOX,true,in) != STAT_MSG_EMPTY_MAILBOX) {
             if (in == 1){ // Detectou bonecos
                 PegaPessoas();
-                SendResponseNumber(OUT_MBOX,0xFF);
                 OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
             }
 
