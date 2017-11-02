@@ -93,7 +93,7 @@ float GetGyroOffset(){ // Calcula o offset do giroscopio
     return gyro_sum/OFFSET_SAMPLES;
 }
 
-// FUNCAO PARA DETECTAR AS CORES   
+// FUNCOES PARA DETECTAR AS CORES E FIM DA PISTA   
 //
 //
 
@@ -146,6 +146,51 @@ sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
         color_l = RED;  
 }
 
+// Detecta se esta caindo e corrige a trajetória
+sub detect_fall(){
+    if(color_r == OUT && color_l != OUT){
+        Off(MOTORS);
+        Wait(100);
+        detect_colors();
+        // Espera o robô parar para ver se ele está realmente fora da pista
+        if(color_r == OUT && color_l != OUT){
+            OnFwd(R_MOTOR,-50);
+            OnRev(L_MOTOR, -20);
+            while(color_r == OUT && color_l != OUT){
+                detect_colors();
+            }
+           
+            detect_colors();
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+            while(color_r == last_color || color_l == last_color)
+                detect_colors();
+        }
+        else
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    };
+    if(color_l == OUT && color_r != OUT){
+        Off(MOTORS);
+        Wait(100);
+        detect_colors();
+        // Mesmo comentário de algumas linhas acima
+        if(color_l == OUT && color_r != OUT){
+            OnFwd(L_MOTOR,-50);
+            OnRev(R_MOTOR, -20);
+            while(color_l == OUT && color_r != OUT){
+                detect_colors();
+            }
+            
+            detect_colors();
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+            while(color_r == last_color || color_l == last_color)
+                detect_colors();
+            
+        }
+        else
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    };
+}
+
 // FUNCOES DE CONTROLE DOS MOTORES
 //
 // Os milhoes de abs() foram pra deixar o codigo so com valores positivos pq o Lucas deu rage que nada funcionava com valores negativos
@@ -156,7 +201,10 @@ void AndaReto(float distancia){ // Anda pra frente ou pra tras ate atingir a dis
     SetOffsets();
     if(distancia > 0){ // anda pra frente
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite){
+            detect_colors();
+            detect_fall();
+        }
 
     } else { // anda pra trás
         OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
@@ -291,12 +339,35 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
     SetOffsets();
 
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-    while(color_l != OUT && color_r != OUT)
+    while(color_l != OUT && color_r != OUT){
+        while(color_l != OUT && color_r != OUT){
+            detect_colors();
+            ClearLine(LCD_LINE4);
+            TextOut(0, LCD_LINE4, "LendoL: ");
+            NumOut(50, LCD_LINE4, color_l);
+            ClearLine(LCD_LINE3);
+            TextOut(0, LCD_LINE3, "LendoR: ");
+            NumOut(50, LCD_LINE3, color_r);
+        }
+        Off(MOTORS);
+        Wait(100);
         detect_colors();
+        ClearLine(LCD_LINE2);
+        TextOut(0, LCD_LINE2, "Sai do while");
+        ClearLine(LCD_LINE4);
+        TextOut(0, LCD_LINE4, "LendoL: ");
+        NumOut(50, LCD_LINE4, color_l);
+        ClearLine(LCD_LINE3);
+        TextOut(0, LCD_LINE3, "LendoR: ");
+        NumOut(50, LCD_LINE3, color_r);
+        Wait(5000);
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    }
+
     Off(MOTORS);
     dist_andada = CalculaDistancia(abs(MotorRotationCount(R_MOTOR) - offset_RM));
     
-    if(dist_andada > 10){ // O robo chegou ao fim da parada
+    if(dist_andada > 15){ // O robo chegou ao fim da parada
         detect_colors(); // Para checar se chegou torto
         if(color_l == OUT && color_r == WHITE){
             TurnGyroDireita(3);
@@ -341,8 +412,9 @@ void SegueViagem(){ // Fecha o portao, dá ré e sai da parada para a rua girand
 }
 
 void PegaPessoas(){ // Compiladão pra Anitta pegar geral (os nomes das funcoes tão bem sugestivos)
+    Off(MOTORS);
     MovePortao(120);
-    AndaReto(15);
+    AndaReto(20);
     TurnGyroDireita(90);
     while(AndaVerificando());
     SegueViagem();
@@ -362,8 +434,10 @@ sub adjust(){
 
     // Se for preto não precisa de ajuste
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-    while(nova_r == color_r || nova_l == color_l)
+    while(nova_r == color_r || nova_l == color_l){
         detect_colors();
+        detect_fall();
+    }
     Off(MOTORS);
 
     if(nova_r != BLACK && nova_l != BLACK){
@@ -449,49 +523,6 @@ sub choose_path(){
     };
 }
 
-// Detecta se esta caindo e corrige a trajetória
-sub detect_fall(){
-    if(color_r == OUT){
-        
-        detect_colors();
-        // Espera o robô parar para ver se ele está realmente fora da pista
-        if(color_r == OUT){
-            OnFwd(R_MOTOR,-50);
-            OnRev(L_MOTOR, -20);
-            while(color_r == OUT){
-                detect_colors();
-            }
-           
-            detect_colors();
-            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-            while(color_r == last_color || color_l == last_color)
-                detect_colors();
-        }
-        else
-            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-    };
-    if(color_l == OUT){
-        
-        detect_colors();
-        // Mesmo comentário de algumas linhas acima
-        if(color_l == OUT){
-            OnFwd(L_MOTOR,-50);
-            OnRev(R_MOTOR, -20);
-            while(color_l == OUT){
-                detect_colors();
-            }
-            
-            detect_colors();
-            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-            while(color_r == last_color || color_l == last_color)
-                detect_colors();
-            
-        }
-        else
-            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-    };
-}
-
 task main(){
     int in;
 
@@ -505,8 +536,6 @@ task main(){
         if (ReceiveRemoteNumber(IN_MBOX,true,in) != STAT_MSG_EMPTY_MAILBOX) {
             if (in == 1){ // Detectou bonecos
                 PegaPessoas();
-                TextOut(0,LCD_LINE3," ");
-                NumOut(5,LCD_LINE3,in);
                 SendResponseNumber(OUT_MBOX,0xFF);
                 OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
             }
