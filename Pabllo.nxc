@@ -20,8 +20,6 @@
 
 #define DIAMETER 8.3 // Aproximado
 #define RAIO_RODA 4
-#define INSENSIBILIDADE 0.9
-#define POT -50
 #define OFFSET_SAMPLES 3000
 
 #define BT_CONN 1
@@ -32,7 +30,8 @@
 //
 //
 
-float offset_LM, offset_RM, offset_G;
+int POT = -50
+long int offset_LM, offset_RM, offset_G;
 byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l, nova_r, nova_l, last_color, last_dir;
 char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
 
@@ -66,10 +65,10 @@ sub Init(){
     last_dir = FRENTE;
 }
 
-void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)  
-    offset_LM = abs(MotorRotationCount(L_MOTOR));
-    offset_RM = abs(MotorRotationCount(R_MOTOR));
-    offset_G = abs(MotorRotationCount(GATE));
+void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)
+    offset_LM = MotorRotationCount(L_MOTOR);
+    offset_RM = MotorRotationCount(R_MOTOR);
+    offset_G = MotorRotationCount(GATE);
 }
 
 float CalculaDistancia(float angulo_motor){ // Calcula a distancia em cm equivalente a angulacao do motor passada como argumento
@@ -93,14 +92,14 @@ float GetGyroOffset(){ // Calcula o offset do giroscopio
     return gyro_sum/OFFSET_SAMPLES;
 }
 
-// FUNCOES PARA DETECTAR AS CORES E FIM DA PISTA   
+// FUNCOES PARA DETECTAR AS CORES E FIM DA PISTA
 //
 //
 
 sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
     ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
-    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);  
-    
+    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);
+
     /*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
     if(num_r == 14)
         if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
@@ -115,20 +114,20 @@ sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
     else if(num_r == 17)
         color_r = BLACK;
     else if(num_r == 13)
-        color_r = WHITE;    
+        color_r = WHITE;
     else if(num_r == 4)
         color_r = GREEN;
     else if(num_r == 3 || num_r == 2)
         color_r = BLUE;
     else if(num_r >= 7 && num_r <= 10)
         color_r = RED;
-            
-        
+
+
     if(num_l == 14)
         if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
             color_l = WHITE;
         else
-            color_l = OUT;  
+            color_l = OUT;
     else if(num_l == 12)
         if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
             color_l = WHITE;
@@ -137,13 +136,13 @@ sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
     else if(num_l == 17)
         color_l = BLACK;
     else if(num_l == 13)
-        color_l = WHITE;                            
+        color_l = WHITE;
     else if(num_l == 4)
         color_l = GREEN;
     else if(num_l == 3 || num_l == 2)
         color_l = BLUE;
     else if(num_l >= 7 && num_l <= 10)
-        color_l = RED;  
+        color_l = RED;
 }
 
 // Detecta se esta caindo e corrige a trajetória
@@ -159,7 +158,7 @@ sub detect_fall(){
             while(color_r == OUT && color_l != OUT){
                 detect_colors();
             }
-           
+
             detect_colors();
             OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
             while(color_r == last_color || color_l == last_color)
@@ -179,12 +178,12 @@ sub detect_fall(){
             while(color_l == OUT && color_r != OUT){
                 detect_colors();
             }
-            
+
             detect_colors();
             OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
             while(color_r == last_color || color_l == last_color)
                 detect_colors();
-            
+
         }
         else
             OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
@@ -201,14 +200,14 @@ void AndaReto(float distancia){ // Anda pra frente ou pra tras ate atingir a dis
     SetOffsets();
     if(distancia > 0){ // anda pra frente
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite){
+        while(abs(MotorRotationCount(R_MOTOR) - offset_RM) < angulo_limite && abs(MotorRotationCount(L_MOTOR) - offset_LM) < angulo_limite){
             detect_colors();
             detect_fall();
         }
 
     } else { // anda pra trás
         OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
-        while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);
+        while(abs(MotorRotationCount(R_MOTOR) - offset_RM) < angulo_limite && abs(MotorRotationCount(L_MOTOR) - offset_LM) < angulo_limite);
     }
 
     Off(MOTORS);
@@ -217,7 +216,7 @@ void AndaReto(float distancia){ // Anda pra frente ou pra tras ate atingir a dis
 void MovePortao(float angulo_limite){ // Levanta ou abaixa o portao dependendo do argumento passado
     SetOffsets();
     if(angulo_limite > 0){ // levanta o portao
-        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+        while(abs(MotorRotationCount(GATE) - offset_G) < angulo_limite){
             OnFwd(GATE, POT);
         }
         OnFwd(GATE, POT+10);
@@ -250,12 +249,12 @@ sub TurnGyroDireita(float degrees){ // Faz apenas a roda direita rodar, para fre
 
     } else { // Sentido horario
         OnRev(R_MOTOR, -75);
-        while(angle < degrees){ 
+        while(angle < degrees){
             prev_time = time;
             time = CurrentTick();
             gyro = SensorHTGyro(GYRO, offset);
             angle += gyro * (time - prev_time)/1000.0;
-        }       
+        }
     }
     Off(MOTORS);
 }
@@ -307,7 +306,7 @@ sub TurnLeft(){
 
 // Meia Volta
 sub TurnBack(){
-    TurnGyroDireita(90);
+    TurnGyroDireita(88);
     TurnGyroEsquerda(70);
 }
 
@@ -315,7 +314,7 @@ sub TurnBack(){
 //
 //
 
-void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alternadamente pra ajudar a girar as rodinhas de apoio 
+void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alternadamente pra ajudar a girar as rodinhas de apoio
     Wait(200);
     OnFwd(R_MOTOR, POT);
     Wait(100);
@@ -332,7 +331,8 @@ void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alter
 }
 
 int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
-    float angulo_limite, dist_andada;
+    float angulo_limite;
+    long int dist_andada;
 
     Rebolada(); // Ajudar a endireitar as rodinhas de apoio
     detect_colors();
@@ -340,33 +340,17 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
 
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
     while(color_l != OUT && color_r != OUT){
-        while(color_l != OUT && color_r != OUT){
+        while(color_l != OUT && color_r != OUT)
             detect_colors();
-            ClearLine(LCD_LINE4);
-            TextOut(0, LCD_LINE4, "LendoL: ");
-            NumOut(50, LCD_LINE4, color_l);
-            ClearLine(LCD_LINE3);
-            TextOut(0, LCD_LINE3, "LendoR: ");
-            NumOut(50, LCD_LINE3, color_r);
-        }
         Off(MOTORS);
         Wait(100);
         detect_colors();
-        ClearLine(LCD_LINE2);
-        TextOut(0, LCD_LINE2, "Sai do while");
-        ClearLine(LCD_LINE4);
-        TextOut(0, LCD_LINE4, "LendoL: ");
-        NumOut(50, LCD_LINE4, color_l);
-        ClearLine(LCD_LINE3);
-        TextOut(0, LCD_LINE3, "LendoR: ");
-        NumOut(50, LCD_LINE3, color_r);
         OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-        Wait(1000);
     }
 
     Off(MOTORS);
     dist_andada = CalculaDistancia(abs(MotorRotationCount(R_MOTOR) - offset_RM));
-    
+
     if(dist_andada > 15){ // O robo chegou ao fim da parada
         detect_colors(); // Para checar se chegou torto
         if(color_l == OUT && color_r == WHITE){
@@ -378,7 +362,7 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
             Off(MOTORS);
         }
 
-        if(color_r == OUT && color_l == WHITE){ 
+        if(color_r == OUT && color_l == WHITE){
             TurnGyroEsquerda(-3);
             detect_colors();
             OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
@@ -391,19 +375,19 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
 
     } else { // O robo precisa se ajustar pra entrar na parada
         if(color_r == OUT){ // Lado direito pra fora
-            TurnGyroDireita(15);
-            TurnGyroEsquerda(-17);
+            TurnGyroDireita(10);
+            TurnGyroEsquerda(-12);
 
         } else { // Lado esquerdo pra fora
-            TurnGyroEsquerda(-15);
-            TurnGyroDireita(17);
+            TurnGyroEsquerda(-10);
+            TurnGyroDireita(13);
         }
         return 1;
     }
 }
 
 void SegueViagem(){ // Fecha o portao, dá ré e sai da parada para a rua girando uma roda de cada vez (todos os parâmetros claramente são experimentais)
-    Off(MOTORS);
+    Wait(200);
     MovePortao(-120);
     AndaReto(-13);
     TurnGyroEsquerda(-15);
@@ -415,16 +399,17 @@ void SegueViagem(){ // Fecha o portao, dá ré e sai da parada para a rua girand
 void PegaPessoas(){ // Compiladão pra Anitta pegar geral (os nomes das funcoes tão bem sugestivos)
     Off(MOTORS);
     MovePortao(120);
-    AndaReto(20);
-    TurnGyroDireita(90);
+    AndaReto(28);
+    TurnGyroDireita(85);
     while(AndaVerificando());
     SegueViagem();
+    POT += 5;
 }
 
 // FUNÇÕES PARA NAVEGAÇÃO NA ARENA
 //
 //
- 
+
 // Ajusta o robô para sair da intersecção para poder virar ou seguir reto
 sub adjust(){
 
@@ -526,7 +511,7 @@ sub choose_path(){
 
 task main(){
     int in;
-
+    int ultimoIn = 0;
     Init();
 
     BTCheck(0);
@@ -534,35 +519,32 @@ task main(){
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
 
     while(true){
-        if (ReceiveRemoteNumber(IN_MBOX,true,in) != STAT_MSG_EMPTY_MAILBOX) {
-            if (in == 1){ // Detectou bonecos
-                Off(MOTORS);
-                Wait(200);
-                PegaPessoas();
-                OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-                in = 0;
-            }
-
+        ReceiveRemoteNumber(IN_MBOX,true,in);
+        ClearLine(LCD_LINE7);
+        NumOut(5,LCD_LINE7,in);
+        if (in == 1 && ultimoIn != 1){ // Detectou bonecos
+            Off(MOTORS);
+            PegaPessoas();
             SendResponseNumber(OUT_MBOX,0xFF);
+            Off(MOTORS);
+            Wait(250);
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+            ultimoIn = 1;
+       }else if(in == 1 && ultimoIn == 1){
+            Off(MOTORS);
+            AndaReto(5);
+            Wait(500);
+       }else if(in == 0){
+            ultimoIn = 0;
+       }
 
+        detect_colors();
+        detect_fall();
+
+        if(color_r != WHITE && color_l != WHITE){
+            Off(MOTORS);
             detect_colors();
-            detect_fall();
-
-            if(color_r != WHITE && color_l != WHITE){
-                Off(MOTORS);
-                detect_colors();
-                choose_path();
-            };
-
-        } else {
-            detect_colors();
-            detect_fall();
-
-            if(color_r != WHITE && color_l != WHITE){
-                Off(MOTORS);
-                detect_colors();
-                choose_path();
-            };
-        }
+            choose_path();
+        };
     }
 }
