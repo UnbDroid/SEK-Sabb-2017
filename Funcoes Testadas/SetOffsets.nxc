@@ -3,12 +3,12 @@
 #define MOTORS OUT_AC
 #define GATE OUT_B
 
-float offset_LM, offset_RM, offset_G;
+long int offset_LM, offset_RM, offset_G;
 
-void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)  
-    offset_LM = abs(MotorRotationCount(L_MOTOR));
-    offset_RM = abs(MotorRotationCount(R_MOTOR));
-    offset_G = abs(MotorRotationCount(GATE));
+void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)
+    offset_LM = MotorRotationCount(L_MOTOR);
+    offset_RM = MotorRotationCount(R_MOTOR);
+    offset_G = MotorRotationCount(GATE);
 }
 
 task main(){
