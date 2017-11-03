@@ -223,7 +223,7 @@ void MovePortao(float angulo_limite){ // Levanta ou abaixa o portao dependendo d
 
     } else { // abaixa o portao
         angulo_limite = -angulo_limite; // trabalhar com coisas positivas é melhor
-        while(abs(abs(MotorRotationCount(GATE)) - offset_G) < angulo_limite){
+        while(abs(MotorRotationCount(GATE) - offset_G) < angulo_limite){
             OnRev(GATE, POT);
         }
         OnRev(GATE, POT+10);
