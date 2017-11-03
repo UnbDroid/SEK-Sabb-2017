@@ -18,8 +18,16 @@
 #define GREEN 	 2
 #define OUT		 5
 
-byte color_r, color_l;
+#define DIAMETER 8.3 // Aproximado
+#define RAIO_RODA 4  // Na teoria a prática é outra
 
+
+
+byte color_r, color_l, nova_r, nova_l, last_color, last_dir;
+char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
+float offset_LM, offset_RM, offset_G;
+
+	
 // Inicializa tudo
 sub Init(){
 	// Set das portas
@@ -68,9 +76,15 @@ sub detect_colors(){
 		color_l = BLACK;					
 }
 
+// Rotina dentro do plaza
 void plazza(){
 
+	ClearLine(LCD_LINE3);
+	TextOut(0, LCD_LINE3, "PLAZZA");
 	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+	Wait(3000);
+
     
     detect_colors();
     while(color_r == WHITE || color_l == WHITE)
@@ -79,23 +93,147 @@ void plazza(){
     	detect_colors();  	
     
     Off(MOTORS);
+    OnFwd(GATE, -20);
     Wait(1000);
     
-    OnFwd(GATE, -20);
-    Wait(200);
-    
+     
     OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
 
     while(color_r == WHITE || color_l == WHITE)
     	detect_colors();    
     while(color_r != WHITE || color_l != WHITE)
     	detect_colors();
-    Off(ALL);
-}
-
-task main(){	
-	plazza();	
+    Off(MOTORS);
+    Off(GATE);
 }
 
 
+void aguarde(){
 
+	detect_colors();
+	while(color_r == WHITE || color_l == WHITE){
+			ClearLine(LCD_LINE3);
+	        TextOut(0, LCD_LINE3, "ME DESLIGUE!");
+    }	
+
+ 
+}
+
+// So seta os offsets :)
+void SetOffsets(void){  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+// Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passa como argumento
+float CalculaAngulo(float distancia){ 
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+// Anda pra frente ou pra tras ate atingir a distancia passada como argumento
+void AndaReto(float distancia){
+    float angulo_limite = abs(CalculaAngulo(distancia));
+
+    SetOffsets();
+    
+    if(distancia > 0)
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    else
+        OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        
+    while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && 
+    	  abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);    
+    Off(MOTORS);
+}
+
+sub adjust(){
+
+	// Incluir código pra fazer o robô se alinhas pra somente uma cor? Evitando uma parte estar fora da pista
+	
+ 	ClearLine(LCD_LINE2);
+	TextOut(0, LCD_LINE2, "LendoR: ");
+	ClearLine(LCD_LINE3);
+	NumOut(50, LCD_LINE3, color_r);
+	ClearLine(LCD_LINE4);
+	TextOut(0, LCD_LINE4, "LendoL: ");
+	ClearLine(LCD_LINE5);
+	NumOut(50, LCD_LINE5, color_l);
+	
+	nova_r = color_r;
+	nova_l = color_l;
+	
+	// Se for preto não precisa de ajuste
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+	while(nova_r == color_r || nova_l == color_l){
+		detect_colors();
+		ClearLine(LCD_LINE2);
+		TextOut(0, LCD_LINE2, "LendoR: ");
+		ClearLine(LCD_LINE3);
+		NumOut(50, LCD_LINE3, color_r);
+		ClearLine(LCD_LINE4);
+		TextOut(0, LCD_LINE4, "LendoL: ");
+		ClearLine(LCD_LINE5);
+		NumOut(50, LCD_LINE5, color_l);
+	}
+	Off(MOTORS);
+	
+	if(nova_r != BLACK && nova_l != BLACK){	
+		Wait(400);
+		AndaReto(2);
+		Off(MOTORS);
+	}
+
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "Entrou no if");
+	ClearLine(LCD_LINE2);
+	TextOut(0, LCD_LINE2, "LendoR: ");
+	ClearLine(LCD_LINE3);
+	NumOut(50, LCD_LINE3, nova_r);
+	ClearLine(LCD_LINE4);
+	TextOut(0, LCD_LINE4, "LendoL: ");
+	ClearLine(LCD_LINE5);
+	NumOut(50, LCD_LINE5, nova_l);				
+	Wait(200);
+
+	ClearLine(LCD_LINE1);
+	TextOut(0, LCD_LINE1, "Parou de ler a nova");			
+	Wait(800);
+}
+
+
+
+task main(){
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+
+    while(true){
+    
+    OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);	
+    detect_colors();
+   		if(color_r != WHITE || color_l != WHITE){
+   		ClearLine(LCD_LINE3);
+		TextOut(0, LCD_LINE3, "COLORIDO");	
+    	        detect_colors();
+    		while(color_r == RED || color_l == RED){
+    		ClearLine(LCD_LINE3);
+		    TextOut(0, LCD_LINE3, "VERMELHO");	
+    		detect_colors();	
+    			if(color_r == BLUE || color_l == BLUE){
+    				plazza();
+    				aguarde();
+    			}	
+    		}
+    	}
+   	ClearLine(LCD_LINE3);
+	TextOut(0, LCD_LINE3, "NAO TO NA FUNCA");
+    }
+}
+
+
+
+		
