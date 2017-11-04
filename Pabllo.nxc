@@ -30,7 +30,7 @@
 //
 //
 
-int POT = -50
+int POT, in, ultimoIn, complete;
 long int offset_LM, offset_RM, offset_G;
 byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l, nova_r, nova_l, last_color, last_dir;
 char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
@@ -63,6 +63,9 @@ sub Init(){
     // Variáveis globais
     last_color = BLACK;
     last_dir = FRENTE;
+    complete = 0;
+    ultimoIn = 0;
+    POT = -50;
 }
 
 void SetOffsets(void){ // So seta os offsets, com seus valores absolutos :)
@@ -153,8 +156,8 @@ sub detect_fall(){
         detect_colors();
         // Espera o robô parar para ver se ele está realmente fora da pista
         if(color_r == OUT && color_l != OUT){
-            OnFwd(R_MOTOR,-50);
-            OnRev(L_MOTOR, -20);
+            OnFwd(R_MOTOR, POT);
+            OnRev(L_MOTOR, POT*0.4);
             while(color_r == OUT && color_l != OUT){
                 detect_colors();
             }
@@ -173,8 +176,8 @@ sub detect_fall(){
         detect_colors();
         // Mesmo comentário de algumas linhas acima
         if(color_l == OUT && color_r != OUT){
-            OnFwd(L_MOTOR,-50);
-            OnRev(R_MOTOR, -20);
+            OnFwd(L_MOTOR, POT);
+            OnRev(R_MOTOR, POT*0.4);
             while(color_l == OUT && color_r != OUT){
                 detect_colors();
             }
@@ -399,11 +402,11 @@ void SegueViagem(){ // Fecha o portao, dá ré e sai da parada para a rua girand
 void PegaPessoas(){ // Compiladão pra Anitta pegar geral (os nomes das funcoes tão bem sugestivos)
     Off(MOTORS);
     MovePortao(120);
-    AndaReto(28);
+    AndaReto(26);
     TurnGyroDireita(85);
     while(AndaVerificando());
     SegueViagem();
-    POT += 5;
+    POT += 10;
 }
 
 // FUNÇÕES PARA NAVEGAÇÃO NA ARENA
@@ -434,6 +437,22 @@ sub adjust(){
     Wait(100);
 }
 
+sub adjust_color(){
+    detect_colors();
+    if(color_l == WHITE && color_r != WHITE){
+        OnFwd(L_MOTOR, -40);
+        OnRev(R_MOTOR, -40);
+        while(color_r != color_l)
+            detect_colors();
+    }
+    else if(color_r == WHITE && color_l != WHITE){
+        OnFwd(R_MOTOR, -40);
+        OnRev(L_MOTOR, -40);
+        while(color_r != color_l)
+            detect_colors();
+    }
+}
+
 // Escolhe para onde virar
 sub choose_path(){
 
@@ -445,11 +464,20 @@ sub choose_path(){
         // nunca = Desde que o robô não ultrapasse uma cor sem ler absolutamente nada
 
         // Esta condição serve mais para teste experimentais, onde o robô é retirado da pista com as mãos
-        if(last_color>=0 && last_color <=2)
-            dir[last_color][last_dir] = 0;
-        TurnBack();
-        last_color = BLACK;
-        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        if(complete >= 2){
+            ClearLine(LCD_LINE1);
+            TextOut(0, LCD_LINE1, "ENTREI CARAI");
+            POT = -75;
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        }
+        else{
+            if(last_color>=0 && last_color <=2)
+                dir[last_color][last_dir] = 0;
+            TurnBack();
+            adjust_color();
+            last_color = BLACK;
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        };
     }
     else if(nova_r == nova_l && nova_r<3 && nova_r >= 0){
 
@@ -462,6 +490,7 @@ sub choose_path(){
                 dir[last_color][(last_dir+2)%3] = 0;
                 dir[(last_color+1)%3][last_dir] = 0;
                 dir[(last_color+2)%3][last_dir] = 0;
+                complete++;
             };
         };
 
@@ -509,9 +538,24 @@ sub choose_path(){
     };
 }
 
+void detect_people(){
+    ReceiveRemoteNumber(IN_MBOX,true,in);
+    ClearLine(LCD_LINE7);
+    NumOut(5,LCD_LINE7,in);
+    if (in == 1 && ultimoIn != 1){ // Detectou bonecos
+        Off(MOTORS);
+        PegaPessoas();
+        SendResponseNumber(OUT_MBOX,0xFF);
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        ultimoIn = 1;
+
+   }else if(in == 0){
+        ultimoIn = 0;
+   }
+}
+
+
 task main(){
-    int in;
-    int ultimoIn = 0;
     Init();
 
     BTCheck(0);
@@ -519,25 +563,7 @@ task main(){
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
 
     while(true){
-        ReceiveRemoteNumber(IN_MBOX,true,in);
-        ClearLine(LCD_LINE7);
-        NumOut(5,LCD_LINE7,in);
-        if (in == 1 && ultimoIn != 1){ // Detectou bonecos
-            Off(MOTORS);
-            PegaPessoas();
-            SendResponseNumber(OUT_MBOX,0xFF);
-            Off(MOTORS);
-            Wait(250);
-            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
-            ultimoIn = 1;
-       }else if(in == 1 && ultimoIn == 1){
-            Off(MOTORS);
-            AndaReto(5);
-            Wait(500);
-       }else if(in == 0){
-            ultimoIn = 0;
-       }
-
+        detect_people();
         detect_colors();
         detect_fall();
 
@@ -545,6 +571,10 @@ task main(){
             Off(MOTORS);
             detect_colors();
             choose_path();
+            ClearLine(LCD_LINE7);
+            TextOut(0, LCD_LINE7, "COMPLETE:");
+            NumOut(55, LCD_LINE7, complete);
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
         };
     }
 }
