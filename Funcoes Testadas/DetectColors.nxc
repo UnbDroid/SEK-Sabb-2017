@@ -1,63 +1,87 @@
 #define L_COLOR IN_1
 #define R_COLOR IN_4
 
+#define BLUE     6
 #define OUT      5
 #define WHITE    4
 #define BLACK    3
 #define GREEN    2
-#define BLUE     1
+#define YELLOW   1
 #define RED      0
 
 byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l;
 
 // Função que tabela a saída dos sensores de luz para as cores lidas
-sub detect_colors(){
+sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
     ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
-    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);  
-    
+    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);
+
     /*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
     if(num_r == 14)
-        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+        if(white_r > 217)
             color_r = WHITE;
         else
             color_r = OUT;
     else if(num_r == 12)
-        if(white_r > 217 && red_r > 217 && green_r > 217 && blue_r > 217) // Parametros experimentais, confia rsrs
+        if(white_r > 217)
             color_r = WHITE;
         else
             color_r = BLACK;
     else if(num_r == 17)
-        color_r = BLACK;
+        if(white_r > 217)
+            color_r = WHITE;
+        else if(white_r < 90)
+            color_r = BLACK;
+        else
+            color_r = OUT;
     else if(num_r == 13)
-        color_r = WHITE;    
-    else if(num_r == 4)
+        color_r = WHITE;
+    else if(num_r == 3 || num_r == 4)
         color_r = GREEN;
-    else if(num_r == 3 || num_r == 2)
-        color_r = BLUE;
-    else if(num_r >= 7 && num_r <= 10)
+    else if(num_r == 5 || num_r == 6)
+        color_r = YELLOW;
+    else if(num_r == 7)
+        if(green_r > 130)
+            color_r = YELLOW;
+        else
+            color_r = RED;
+    else if(num_r > 7 && num_r <= 10)
         color_r = RED;
-            
-        
+    else if(num_r == 2)
+        color_r = BLUE;
+
     if(num_l == 14)
-        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+        if(white_l > 217)
             color_l = WHITE;
         else
-            color_l = OUT;  
+            color_l = OUT;
     else if(num_l == 12)
-        if(white_l > 217 && red_l > 217 && green_l > 217 && blue_l > 217) // Parametros experimentais, confia rsrs
+        if(white_l > 217)
             color_l = WHITE;
         else
             color_l = BLACK;
     else if(num_l == 17)
-        color_l = BLACK;
+        if(white_l > 217)
+            color_l = WHITE;
+        else if(white_l < 90)
+            color_l = BLACK;
+        else
+            color_l = OUT;
     else if(num_l == 13)
-        color_l = WHITE;                            
-    else if(num_l == 4)
+        color_l = WHITE;
+    else if(num_l == 3 || num_l == 4)
         color_l = GREEN;
-    else if(num_l == 3 || num_l == 2)
+    else if(num_l == 5 || num_l == 6)
+        color_l = YELLOW;
+    else if(num_l == 7)
+        if(green_l > 130)
+            color_l = YELLOW;
+        else
+            color_l = RED;
+    else if(num_l > 7 && num_l <= 10)
+        color_l = RED;
+    else if(num_l == 2)
         color_l = BLUE;
-    else if(num_l >= 7 && num_l <= 10)
-        color_l = RED;  
 }
 
 task main(){
