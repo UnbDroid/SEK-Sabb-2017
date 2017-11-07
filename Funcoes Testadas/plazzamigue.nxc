@@ -1,0 +1,367 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS  OUT_AC
+#define GATE 	OUT_B
+#define ALL		OUT_ABC
+
+#define POT -70
+#define POTR -70
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+#define GYRO IN_3
+
+#define BLUE     6  
+#define BLACK 	 3
+#define WHITE 	 4
+#define RED   	 0
+#define YELLOW  	 1
+#define GREEN 	 2
+#define OUT	 5
+#define OFFSET_SAMPLES  3000.0
+
+#define DIAMETER 8.3 // Aproximado
+#define RAIO_RODA 4  // Na teoria a prática é outra
+
+
+byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l, last_color;
+char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
+float offset_LM, offset_RM, offset_G;
+
+	
+// Inicializa tudo
+sub Init(){
+	// Set das portas
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+}
+
+float GetGyroOffset(){ // Calcula o offset do giroscopio
+    float gyro_sum = 0, i;
+
+    for(i = 0; i < OFFSET_SAMPLES; ++i)
+        gyro_sum += SensorHTGyro(GYRO);
+
+    return gyro_sum/OFFSET_SAMPLES;
+}
+
+
+
+// Função que tabela a saída dos sensores de luz para as cores lidas
+sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
+    ReadSensorHTColor2Active(R_COLOR, num_r, red_r, green_r, blue_r, white_r);
+    ReadSensorHTColor2Active(L_COLOR, num_l, red_l, green_l, blue_l, white_l);
+
+    /*Achei melhor if em vez de switch pois os valores lidos dependem da calibração*/
+    if(num_r == 14)
+        if(white_r > 217)
+            color_r = WHITE;
+        else
+            color_r = OUT;
+    else if(num_r == 12)
+        if(white_r > 217)
+            color_r = WHITE;
+        else
+            color_r = BLACK;
+    else if(num_r == 17)
+        if(white_r > 217)
+            color_r = WHITE;
+        else if(white_r < 90)
+            color_r = BLACK;
+        else
+            color_r = OUT;
+    else if(num_r == 13)
+        color_r = WHITE;
+    else if(num_r == 3 || num_r == 4)
+        color_r = GREEN;
+    else if(num_r == 5 || num_r == 6)
+        color_r = YELLOW;
+    else if(num_r == 7)
+        if(green_r > 130)
+            color_r = YELLOW;
+        else
+            color_r = RED;
+    else if(num_r > 7 && num_r <= 10)
+        color_r = RED;
+    else if(num_r == 2)
+        color_r = BLUE;
+
+    if(num_l == 14)
+        if(white_l > 217)
+            color_l = WHITE;
+        else
+            color_l = OUT;
+    else if(num_l == 12)
+        if(white_l > 217)
+            color_l = WHITE;
+        else
+            color_l = BLACK;
+    else if(num_l == 17)
+        if(white_l > 217)
+            color_l = WHITE;
+        else if(white_l < 90)
+            color_l = BLACK;
+        else
+            color_l = OUT;
+    else if(num_l == 13)
+        color_l = WHITE;
+    else if(num_l == 3 || num_l == 4)
+        color_l = GREEN;
+    else if(num_l == 5 || num_l == 6)
+        color_l = YELLOW;
+    else if(num_l == 7)
+        if(green_l > 130)
+            color_l = YELLOW;
+        else
+            color_l = RED;
+    else if(num_l > 7 && num_l <= 10)
+        color_l = RED;
+    else if(num_l == 2)
+        color_l = BLUE;
+}
+
+sub TurnGyroDireita(float degrees){ // Faz apenas a roda direita rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick();
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnFwd(R_MOTOR, -75);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnRev(R_MOTOR, -75);
+        while(angle < degrees){ 
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }       
+    }
+    Off(MOTORS);
+}
+
+sub TurnGyroEsquerda(float degrees){ // Faz apenas a roda esquerda rodar, para frente ou para tras ate que o robo gire a angulacao desejada
+    float angle = 0, gyro = 0;
+    unsigned long time, prev_time;
+
+    Off(MOTORS);
+    float offset = GetGyroOffset();
+    time = CurrentTick()
+
+    if(degrees < 0){ // Sentido anti-horario
+        OnRev(L_MOTOR, POT-25);
+        while(angle > degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+
+    } else { // Sentido horario
+        OnFwd(L_MOTOR, POT-25);
+        while(angle < degrees){
+            prev_time = time;
+            time = CurrentTick();
+            gyro = SensorHTGyro(GYRO, offset);
+            angle += gyro * (time - prev_time)/1000.0;
+        }
+    }
+    Off(MOTORS);
+}
+
+
+sub TurnLeft(){
+    TurnGyroEsquerda(-15);
+    TurnGyroDireita(-15);
+    TurnGyroEsquerda(-15);
+    TurnGyroDireita(-13);
+}
+
+sub detect_fall(){
+    if(color_r == OUT){
+        
+        detect_colors();
+        // Espera o robô parar para ver se ele está realmente fora da pista
+        if(color_r == OUT){
+            OnFwd(R_MOTOR,-50);
+            OnRev(L_MOTOR, -20);
+            while(color_r == OUT){
+                detect_colors();
+            }
+           
+            detect_colors();
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+            while(color_r == last_color || color_l == last_color)
+                detect_colors();
+        }
+        else
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    };
+    if(color_l == OUT){
+        
+        detect_colors();
+        // Mesmo comentário de algumas linhas acima
+        if(color_l == OUT){
+            OnFwd(L_MOTOR,-50);
+            OnRev(R_MOTOR, -20);
+            while(color_l == OUT){
+                detect_colors();
+            }
+            
+            detect_colors();
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+            while(color_r == last_color || color_l == last_color)
+                detect_colors();
+            
+        }
+        else
+            OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    };
+}
+
+
+// Rotina dentro do plaza
+void plazza(){
+
+    int amor= 0;
+    while(amor==0){
+    detect_colors();
+    detect_fall();     
+	ClearLine(LCD_LINE3);
+	TextOut(0, LCD_LINE3, "PLAZZA");
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+      
+    while(color_r == WHITE || color_l == WHITE)
+    	detect_colors();
+    while(color_r != WHITE && color_l != WHITE)
+    	detect_colors();  	
+    
+    Off(MOTORS);
+    OnFwd(GATE, -50);
+    Wait(1000);
+    
+     
+    OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+    while(color_r == WHITE || color_l == WHITE)
+    	detect_colors();    
+    while(color_r != WHITE && color_l != WHITE){
+        detect_colors();
+        amor=1;
+    }
+    Off(MOTORS);
+    Off(GATE);
+    OnRev(GATE, -50);
+    
+    TurnLeft();
+    TurnLeft();
+    }
+	
+}
+
+
+void aguarde(){
+
+	detect_colors();
+	while(color_r == WHITE || color_l == WHITE){
+			ClearLine(LCD_LINE3);
+	        TextOut(0, LCD_LINE3, "ME DESLIGUE!");
+    }	
+
+ 
+}
+
+// So seta os offsets :)
+void SetOffsets(void){  
+    offset_LM = abs(MotorRotationCount(L_MOTOR));
+    offset_RM = abs(MotorRotationCount(R_MOTOR));
+    offset_G = abs(MotorRotationCount(GATE));
+}
+
+// Calcula o angulo em graus que o motor deve girar para que seja percorrida a distancia passa como argumento
+float CalculaAngulo(float distancia){ 
+    float angulo_motor;
+    angulo_motor = (distancia*360)/(2*PI*RAIO_RODA);
+    return abs(angulo_motor);
+}
+// Anda pra frente ou pra tras ate atingir a distancia passada como argumento
+void AndaReto(float distancia){
+    float angulo_limite = abs(CalculaAngulo(distancia));
+
+    SetOffsets();
+    
+    if(distancia > 0)
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    else
+        OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+        
+    while(abs(abs(MotorRotationCount(R_MOTOR)) - offset_RM) < angulo_limite && 
+    	  abs(abs(MotorRotationCount(L_MOTOR)) - offset_LM) < angulo_limite);    
+    Off(MOTORS);
+}
+
+
+
+
+
+task main(){
+    SetSensorHTGyro(GYRO);
+    SetSensorLowspeed(L_COLOR);
+    SetSensorLowspeed(R_COLOR);
+    SetHTColor2Mode(L_COLOR, HT_CMD_COLOR2_ACTIVE);
+    SetHTColor2Mode(R_COLOR, HT_CMD_COLOR2_ACTIVE);
+
+    while(true){
+    
+    OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);	
+    detect_colors();
+	detect_fall();		
+   		if(color_r != WHITE || color_l != WHITE){
+   		ClearLine(LCD_LINE3);
+		TextOut(0, LCD_LINE3, "COLORIDO");	
+    	detect_colors();
+		detect_fall();
+    		while(color_r == RED || color_l == RED){
+    		ClearLine(LCD_LINE3);
+		    TextOut(0, LCD_LINE3, "VERMELHO");	
+    		detect_colors();
+		    detect_fall();	
+    			while(color_r == BLUE || color_l == BLUE){
+                    detect_colors();
+                    detect_fall();
+                    while(color_r == GREEN || color_l == GREEN){
+                        detect_colors();
+                    detect_fall();
+                         while(color_r == WHITE || color_l == WHITE){
+                         plazza();
+                         aguarde();
+                        }
+                    }
+
+                      
+                }
+    					
+    		}
+         }
+    }    
+
+   	ClearLine(LCD_LINE3);
+	TextOut(0, LCD_LINE3, "NAO TO NA FUNCA");
+}
+
+
+
+
+		
