@@ -64,8 +64,8 @@ sub adjust_color();
 sub choose_path();
 void detect_people();
 sub print_matrix();
+void white_up();
 void plazza();
-void SubirRampa();
 // Fim de headers de funções
 
 // VARIAVEIS GLOBAIS
@@ -108,7 +108,7 @@ sub Init(){
     last_dir = FRENTE;
     complete = 0;
     ultimoIn = 0;
-    POT = -50;
+    POT = -65;
     velocidade_l = 0;
     velocidade_r = 0;
     velocidade_media = 0;
@@ -229,7 +229,7 @@ sub detect_colors(){ // Tabela a saída dos sensores de luz para as cores lidas
         color_r = BLUE;
 
     if(num_l == 14)
-        if(white_l > 217)
+        if(white_l > 217)++
             color_l = WHITE;
         else
             color_l = OUT;
@@ -980,6 +980,14 @@ void detect_touch(){
     }
 }
 
+void white_up(){
+    OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+    while(color_l != WHITE && color_r != WHITE){
+        detect_colors();
+        detect_fall();     
+    }
+}
+
 // Rotina dentro do plaza
 void plazza(){
 
@@ -987,6 +995,7 @@ void plazza(){
     TextOut(0, LCD_LINE3, "PLAZZA");
     OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
 
+    white_up();
     detect_colors();
     while(color_r == WHITE || color_l == WHITE){
         detect_colors();
@@ -997,9 +1006,8 @@ void plazza(){
         detect_colors();
 
     Off(MOTORS);
-    OnFwd(GATE, -50);
+    MovePortao(120);
     Wait(1000);
-
 
     OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
 
