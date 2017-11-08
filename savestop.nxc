@@ -1,0 +1,113 @@
+#define L_MOTOR OUT_A
+#define R_MOTOR OUT_C
+#define MOTORS OUT_AC
+#define GATE OUT_B
+
+#define L_COLOR IN_1
+#define R_COLOR IN_4
+#define GYRO IN_3
+
+#define BLUE     6
+#define OUT      5
+#define WHITE    4
+#define BLACK    3
+#define GREEN    2
+#define YELLOW   1
+#define RED      0
+
+#define DIREITA  0
+#define FRENTE   1
+#define ESQUERDA 2
+
+#define RAIO_RODA 4
+#define OFFSET_SAMPLES 3000
+
+#define VELOCIDADE_MAX 14
+#define VELOCIDADE_MIN 12
+#define POT_MAX -80
+
+#define BT_CONN 1
+#define OUT_MBOX 1
+#define IN_MBOX 5
+
+#define FILE_NAME "colors.dat"
+#define FILE_SIZE 32
+
+#define DIST_MINIMA 2 
+#define DIST_MAXIMA 3
+
+unsigned long last_time;
+sub Fix_shit_up(){
+	detect_colors();
+	Off(MOTORS);
+	if(color_r != WHITE){
+		AndaReto(-0.5);
+		OnRev(L_MOTOR, POT);
+		while(color_r != WHITE)
+			detect_colors();
+		Off(MOTORS);	
+	}
+	else if(color_l != WHITE){
+		AndaReto(-0.5);
+		OnRev(R_MOTOR, POT);
+		while(color_l != WHITE)
+			detect_colors();
+		Off(MOTORS);	
+	}
+	else {
+		AndaReto(-1);
+	};	
+	OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+}
+
+sub detect_stop(){
+	if((CurrentTick() - last_time) > 2000){
+		last_time = CurrentTick();
+		SetOffsets();
+	}
+	else {
+		long dist_l, dist_r;
+		unsigned long toime = (CurrentTick() - last_time);
+		dist_l = CalculaDiferentao(abs(MotorRotationCount(L_MOTOR) - offset_LM))/toime;
+		dist_r = CalculaDiferentao(abs(MotorRotationCount(R_MOTOR) - offset_RM))/toime;
+		if(dist_l < DIST_MINIMA || dist_r < DIST_MINIMA || abs(dist_r - dist_l) > DIST_MAXIMA){
+			Fix_shit_up();
+		};
+	};
+}
+
+
+// Rotina dentro do plaza
+void plazza(){
+
+    ClearLine(LCD_LINE3);
+    TextOut(0, LCD_LINE3, "PLAZZA");
+    OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+    detect_colors();
+    while(color_r == WHITE || color_l == WHITE){
+        detect_colors();
+        detect_fall();
+        detect_stop();
+    };
+    while(color_r != WHITE || color_l != WHITE)
+        detect_colors();
+
+    Off(MOTORS);
+    OnFwd(GATE, -50);
+    Wait(1000);
+
+
+    OnRevReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+    while(color_r == WHITE || color_l == WHITE)
+        detect_colors();
+    while(color_r != WHITE || color_l != WHITE)
+        detect_colors();
+    Off(MOTORS);
+    Off(GATE);
+}
+
+task main(){
+	plazza();
+}
