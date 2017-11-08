@@ -40,7 +40,7 @@ void SetOffsets(void);
 float CalculaDistancia(float angulo_motor);
 float CalculaAngulo(float distancia);
 float GetGyroOffset();
-long int CalculaDiferentao(int angulo_motor);
+long CalculaDiferentao(long angulo_motor);
 void AjustaVelocidade();
 sub detect_colors();
 sub detect_fall();
@@ -74,7 +74,7 @@ void SubirRampa();
 //
 
 int POT, in, ultimoIn, complete, flag_parada;
-long int offset_LM, offset_RM, offset_G, velocidade_l, velocidade_r, velocidade_media;
+long offset_LM, offset_RM, offset_G, velocidade_l, velocidade_r, velocidade_media;
 byte red_r, green_r, blue_r, white_r, num_r, red_l, green_l, blue_l, white_l, num_l, color_r, color_l, nova_r, nova_l, last_color;  
 byte last_dir, handle;
 char dir[3][3] = {{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}};
@@ -147,14 +147,14 @@ float GetGyroOffset(){ // Calcula o offset do giroscopio
 //
 //
 
-long int CalculaDiferentao(int angulo_motor){ // Igual ao CalculaDistancia, mas é diferentão pq usa long int pra não dar ruim com os rotation count
-    long int distancia;
-    distancia = 1000*(angulo_motor*2*PI*RAIO_RODA)/(360);
+long CalculaDiferentao(long angulo_motor){ // Igual ao CalculaDistancia, mas é diferentão pq usa long pra não dar ruim com os rotation count
+    long distancia;
+    distancia = (angulo_motor*2*PI*RAIO_RODA)/(360.0);
     return abs(distancia);
 }
 
-long int VelocidadeRobo(byte output){ // Pega o deltaT e o deltaTeta, transforma o deltaTeta em deltaS e calcula a velocidade do robo
-    long int velocidade, angulo_inicial, angulo_final, angulo, distancia;
+long VelocidadeRobo(byte output){ // Pega o deltaT e o deltaTeta, transforma o deltaTeta em deltaS e calcula a velocidade do robo
+    long velocidade, angulo_inicial, angulo_final, angulo, distancia;
     unsigned long tempo_inicial, tempo_final, tempo;
 
     tempo_inicial = CurrentTick();
@@ -449,7 +449,7 @@ void Rebolada(){ // (bem Anitta mesmo) Anda um pouquinho com as duas rodas alter
 
 int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
     float angulo_limite;
-    long int dist_andada;
+    long dist_andada;
 
     Rebolada(); // Ajudar a endireitar as rodinhas de apoio
     detect_colors();
@@ -491,11 +491,11 @@ int AndaVerificando(){ // Anda reto ate encontrar o fim da pista
         flag_parada = 1;
         return 0;
     } else { 
-        if(color_r == OUT){ // Lado direito pra fora
+        if(color_r == OUT && color_l != OUT){ // Lado direito pra fora
             TurnGyroDireita(10);
             TurnGyroEsquerda(-12);
 
-        } else { // Lado esquerdo pra fora
+        } else if(color_l == OUT && color_r != OUT){ // Lado esquerdo pra fora
             TurnGyroEsquerda(-10);
             TurnGyroDireita(13);
         }
@@ -542,7 +542,7 @@ void PegaPessoasDireita(){ // Compiladão pra Anitta pegar geral (os nomes das f
         //AjustaVelocidade();
     }else{
 
-        long int dist_andada;
+        long dist_andada;
         Rebolada(); // Ajudar a endireitar as rodinhas de apoio
         detect_colors();
         SetOffsets();
@@ -583,7 +583,7 @@ void PegaPessoasEsquerda(){ // Compiladão pra Anitta pegar geral (os nomes das 
         //AjustaVelocidade();
     }else{
 
-        long int dist_andada;
+        long dist_andada;
         Rebolada(); // Ajudar a endireitar as rodinhas de apoio
         detect_colors();
         SetOffsets();
@@ -592,8 +592,12 @@ void PegaPessoasEsquerda(){ // Compiladão pra Anitta pegar geral (os nomes das 
         while(dist_andada < 10 && color_r != OUT){
             detect_colors();
             dist_andada = CalculaDiferentao(abs(MotorRotationCount(R_MOTOR) - offset_RM));
+            ClearLine(LCD_LINE1);
+            TextOut(0, LCD_LINE1, "DIST:");
+            NumOut(50, LCD_LINE1, dist_andada);
         }
         Off(MOTORS);
+        Wait(3000);
 
         if(color_r != OUT){
             SegueViagemEsquerda();
