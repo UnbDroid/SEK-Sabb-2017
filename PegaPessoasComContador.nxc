@@ -1,0 +1,97 @@
+void PegaPessoasDireita(){ // Compiladão pra Anitta pegar geral (os nomes das funcoes tão bem sugestivos)
+    Off(MOTORS);
+    MovePortao(120);
+    AndaReto(23);
+    TurnGyroDireita(85);
+    detect_colors();
+    int contador = 0;
+    if(color_r == WHITE){
+        while(AndaVerificando() && contador <= 5){
+            contador++;
+        }
+        if (contador >= 5){
+            TurnGyroDireita(-70);
+        }
+        if(flag_parada == 0){
+            SegueViagemDireita();
+        } else {
+            AndaReto(-8);
+            MovePortao(-120);
+            TurnGyroDireita(-85);
+        }
+        //AjustaVelocidade();
+    }else{
+
+        long dist_andada;
+        Rebolada(); // Ajudar a endireitar as rodinhas de apoio
+        detect_colors();
+        SetOffsets();
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+        while(dist_andada < 10 && color_l != OUT){
+            detect_colors();
+            dist_andada = CalculaDiferentao(abs(MotorRotationCount(R_MOTOR) - offset_RM));
+        }
+        Off(MOTORS);
+
+        if(color_l != OUT){
+            SegueViagemDireita();
+            //AjustaVelocidade();
+        }else{
+            AndaReto(-8);
+            MovePortao(-120);
+            TurnGyroDireita(-85);
+        }
+    }
+}
+
+void PegaPessoasEsquerda(){ // Compiladão pra Anitta pegar geral (os nomes das funcoes tão bem sugestivos)
+    Off(MOTORS);
+    MovePortao(120);
+    AndaReto(23);
+    TurnGyroEsquerda(-85);
+    detect_colors();
+    int contador = 0;
+    if(color_l == WHITE){
+        while(AndaVerificando() && contador <= 5){
+            contador++;
+        }
+        if (contador >= 5){
+            TurnGyroEsquerda(70);
+        }
+        if(flag_parada == 0){
+            SegueViagemEsquerda();
+        } else {
+            AndaReto(-8);
+            MovePortao(-120);
+            TurnGyroEsquerda(85);
+        }
+        //AjustaVelocidade();
+    }else{
+
+        long dist_andada;
+        Rebolada(); // Ajudar a endireitar as rodinhas de apoio
+        detect_colors();
+        SetOffsets();
+        OnFwdReg(MOTORS, POT, OUT_REGMODE_SYNC);
+
+        while(dist_andada < 10 && color_r != OUT){
+            detect_colors();
+            dist_andada = CalculaDiferentao(abs(MotorRotationCount(R_MOTOR) - offset_RM));
+            ClearLine(LCD_LINE1);
+            TextOut(0, LCD_LINE1, "DIST:");
+            NumOut(50, LCD_LINE1, dist_andada);
+        }
+        Off(MOTORS);
+        Wait(3000);
+
+        if(color_r != OUT){
+            SegueViagemEsquerda();
+            //AjustaVelocidade();
+        }else{
+            AndaReto(-8);
+            MovePortao(-120);
+            TurnGyroEsquerda(85);
+        }
+    }
+}
