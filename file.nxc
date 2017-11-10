@@ -1,0 +1,88 @@
+// Abre o arquivo no começo do código, se o código já existe atualiza matriz com os valores, se não, inicializa
+// um arquivo
+// O arquivo vai conter 9 bytes, equivalentes às posições da matriz
+sub open_file_read(){
+    unsigned int rtn_code=0, file_size = FILE_SIZE;
+    rtn_code = OpenFileRead(FILE_NAME, file_size, handle);
+    if(rtn_code == LDR_SUCCESS){
+        write_matrix();
+    }
+    else if(rtn_code == LDR_FILENOTFOUND){
+        initialize_file();
+    }
+    else {
+        // Tratamento de erros
+    };
+}
+
+// Funcao para chamar toda vez que atualiza a matriz
+sub update_file(){
+    unsigned int rtn_code=0, file_size = FILE_SIZE;
+    rtn_code = DeleteFile(FILE_NAME);
+    if(rtn_code != LDR_SUCCESS){
+        // Se deu erro na hora de deletar é putaria
+    }
+    else {
+        rtn_code = CreateFile(FILE_NAME, FILE_SIZE, handle);
+        if(rtn_code != LDR_SUCCESS){
+            // Tratamento de erro
+        }
+        else {
+        	int i, j;
+        	char c;
+            for(i=0;i<3;i++){
+            	for(j=0;j<3;j++){
+         			c = dir[i][j];
+		            rtn_code = Write(handle, c);
+		            if(rtn_code != LDR_SUCCESS){
+		                // Tratamento de erro
+		            };
+                };
+            };
+        };  
+    };  
+    CloseFile(handle);
+}
+
+sub write_matrix(){
+    int i=0, j=0;
+    char direcao;
+    unsigned int rtn_code = 0;
+    for(i=0;i<3;i++){
+    	for(j=0;j<3;j++){
+		    rtn_code = Read(handle, direcao);
+		    if(rtn_code == LDR_SUCCESS){
+		        dir[i][j] = direcao;
+		    }
+		    else {
+		        // Tratamento de erros no arquivo
+		    };
+        };
+    };
+    CloseFile(handle);
+}
+
+sub initialize_file(){
+    unsigned int rtn_code = 0;
+    rtn_code = CreateFile(FILE_NAME, FILE_SIZE, handle);
+    if(rtn_code == LDR_SUCCESS){
+        char x = -1;
+        int i, j;
+        for(i=0; i<3; i++){
+        	for(j=0;j<3;j++){
+		        rtn_code = Write(handle, x);
+		        if(rtn_code != LDR_SUCCESS){
+		            // Tratamento de Erros
+		        };  
+            };
+        };
+    }
+    else if(rtn_code == LDR_FILEEXISTS){
+        // Estranho, já que ele tentou abrir na função anterior e não conseguiu
+    }
+    else {
+        // Tratamento de erros
+        // O problema é mais fundo
+    };
+    CloseFile(handle);  
+}
