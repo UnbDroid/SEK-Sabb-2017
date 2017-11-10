@@ -1,0 +1,103 @@
+#define BT_CONN 1
+#define OUTBOX 5
+#define OUTBOX_ULTRAS 6
+#define INBOX 1
+#define R_ULTRAS IN_2
+#define L_ULTRAS IN_3
+#define CLEARLINE(L) \
+TextOut(0,L," ");
+
+float valor_filtrado_direita = 30, valor_filtrado_esquerda = 30;
+float insensibilidade = 0.7;
+
+sub BTCheck(int conn){
+    while (!BluetoothStatus(conn)==NO_ERR){
+        TextOut(5,LCD_LINE2,"Error");
+        Wait(1000);
+        Stop(true);
+    }
+}
+
+void FiltraUSDireita(byte sensor){ // Filtra os valor_filtradoes lidos pelo sensor ultrasonico (algoritmo do Bruno)
+    int i;
+    float leitura_atual;
+    leitura_atual = SensorUS(sensor);
+    if(leitura_atual < 30)
+        insensibilidade = 0.5;
+    else
+        insensibilidade = 0.7;
+    valor_filtrado_direita = valor_filtrado_direita * insensibilidade + leitura_atual * (1-insensibilidade);
+}
+
+void FiltraUSEsquerda(byte sensor){ // Filtra os valor_filtradoes lidos pelo sensor ultrasonico (algoritmo do Bruno)
+    int i;
+    float leitura_atual;
+    leitura_atual = SensorUS(sensor);
+    if(leitura_atual < 30)
+        insensibilidade = 0.5;
+    else
+        insensibilidade = 0.7;
+    valor_filtrado_esquerda = valor_filtrado_esquerda * insensibilidade + leitura_atual * (1-insensibilidade);
+}
+
+task main(){
+    SetSensorUltrasonic(R_ULTRAS);
+    SetSensorUltrasonic(L_ULTRAS);
+    int ack;
+    int i;
+    int ultimoNumero = 1;
+    BTCheck(BT_CONN);
+    TextOut(10,LCD_LINE1,"Master sending");
+    while(true){
+        FiltraUSDireita(R_ULTRAS);
+        FiltraUSEsquerda(L_ULTRAS);
+        NumOut(5,LCD_LINE4,valor_filtrado_direita);
+        NumOut(5,LCD_LINE5,valor_filtrado_esquerda);
+
+        if(valor_filtrado_direita <= 23){
+            CLEARLINE(LCD_LINE3);
+            NumOut(5,LCD_LINE3,1);
+            ack = 0;
+            SendRemoteNumber(BT_CONN,OUTBOX,1);
+            until(ack==0xFF) {
+                Wait(100);
+                SendRemoteNumber(BT_CONN,OUTBOX,1);
+                until(ReceiveRemoteNumber(INBOX,true,ack) == NO_ERR);
+            }
+            ultimoNumero = 1;
+        }else if(valor_filtrado_esquerda <= 23){
+            CLEARLINE(LCD_LINE3);
+            NumOut(5,LCD_LINE3,2);
+            ack = 0;
+            SendRemoteNumber(BT_CONN,OUTBOX,2);
+            until(ack==0xFF) {
+                Wait(100);
+                SendRemoteNumber(BT_CONN,OUTBOX,2);
+                until(ReceiveRemoteNumber(INBOX,true,ack) == NO_ERR);
+            }
+            ultimoNumero = 2;
+        }else if((valor_filtrado_direita - valor_filtrado_esquerda) >= 2){
+            SendRemoteNumber(BT_CONN,OUTBOX_ULTRAS,1);
+            CLEARLINE(LCD_LINE6);
+            NumOut(5,LCD_LINE6,1);
+            Wait(100);
+            SendRemoteNumber(BT_CONN,OUTBOX,0);
+        }else if((valor_filtrado_direita - valor_filtrado_esquerda) <= -2){
+            SendRemoteNumber(BT_CONN,OUTBOX_ULTRAS,0);
+            CLEARLINE(LCD_LINE6);
+            NumOut(5,LCD_LINE6,0);
+            Wait(100);
+            SendRemoteNumber(BT_CONN,OUTBOX,0); 
+        }else{
+            SendRemoteNumber(BT_CONN,OUTBOX_ULTRAS,2);
+            CLEARLINE(LCD_LINE3);
+            NumOut(5,LCD_LINE3,0);
+            ack = 0;
+            Wait(100);
+            SendRemoteNumber(BT_CONN,OUTBOX,0);
+            ultimoNumero = 0;
+        }
+        FiltraUSDireita(R_ULTRAS);
+        FiltraUSEsquerda(L_ULTRAS);
+    }
+}
